@@ -25,7 +25,8 @@ import {
   ScrollText,
   Gem,
   Eye,
-  BookOpen
+  BookOpen,
+  ShieldCheck
 } from "lucide-react";
 
 interface GeneratedContent {
@@ -33,6 +34,25 @@ interface GeneratedContent {
   title: string;
   content: string;
 }
+
+const renderContentWithFantasyIcons = (content: string) => {
+  const listItems = content.replace(/\n- /g, '<br />- ').split('<br />- ').map(item => {
+    if (content.includes('- ')) { // It is a list
+      return item.startsWith('- ') || item.startsWith('<li>') ? `<li><span class="mr-2 text-accent">⚔</span>${item.substring(item.startsWith('- ') ? 2 : 4)}</li>` : item;
+    }
+    return item;
+  }).join('');
+  
+  const processedContent = listItems
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br />');
+
+  if (content.includes('- ')) {
+     return `<ul>${processedContent}</ul>`;
+  }
+  return processedContent;
+};
 
 export default function CockpitPage() {
   const campaign = mockCampaigns[0];
@@ -55,7 +75,7 @@ export default function CockpitPage() {
       return [...prevContents, { id, title, content }];
     });
   };
-
+  
   const toolkitBlocks = [
     { id: 'strong-start', title: 'Strong Start', icon: Swords, generate: async (userInput: string) => (await generateStrongStart({ campaignSetting: globalContext, playerCharacters: userInput })).strongStart, initialContent: sessionPrepData.strongStart, format: (c: string) => c },
     { id: 'plot-hook', title: 'Plot Hook', icon: Compass, generate: async (userInput: string) => await generatePlotHook({ campaignSetting: globalContext, playerCharacters: userInput }), format: (r: any) => `**Hook:** ${r.hook}\n\n**Clues:**\n- ${r.clues.join('\n- ')}` },
@@ -111,14 +131,14 @@ export default function CockpitPage() {
                 {/* Could add a save all button here */}
             </div>
             <ScrollArea className="h-[calc(100vh-10rem)]">
-              <div className="p-8 prose prose-sm max-w-none prose-p:text-foreground/90 prose-headings:text-primary prose-strong:text-foreground prose-em:text-foreground/80 font-body">
+              <div className="p-8 prose prose-sm max-w-none prose-p:text-foreground/90 prose-headings:text-primary prose-strong:text-foreground prose-em:text-foreground/80 font-body prose-ul:list-none prose-ul:p-0 prose-li:flex prose-li:items-start">
                 {generatedContents.length > 0 ? (
                   generatedContents.map(item => (
                     <div key={item.id} className="mb-6">
                       <h3 className="font-headline text-2xl mb-2">{item.title}</h3>
                       <div 
-                        className="text-sm leading-relaxed whitespace-pre-wrap" 
-                        dangerouslySetInnerHTML={{ __html: item.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n- /g, '<br />- ').replace(/\n/g, '<br />') }}
+                        className="text-sm leading-relaxed whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{ __html: renderContentWithFantasyIcons(item.content) }}
                       ></div>
                     </div>
                   ))

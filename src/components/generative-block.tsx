@@ -38,6 +38,7 @@ export function GenerativeBlock({ id, title, icon: Icon, initialContent = "", ge
   const hasGeneratedOnce = useRef(false);
 
   const handleGenerate = async (isRegeneration = false) => {
+    // Only set loading if we are actually going to fetch new data.
     if (!initialContent || isRegeneration) {
         setIsLoading(true);
         hasGeneratedOnce.current = true;
