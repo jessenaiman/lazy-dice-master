@@ -19,17 +19,19 @@ const GenerateSecretsAndCluesInputSchema = z.object({
     .describe('The campaign setting for the RPG session.'),
   potentialScenes: z
     .string()
-    .describe('A list of potential scenes that might occur during the session and any other user-provided context.'),
+    .describe('A list of potential scenes that might occur during the session and any other user-provided context.')
+    .optional(),
   characterMotivations: z
     .string()
     .describe(
       'The motivations of the player characters in the campaign, which can be used to tailor the secrets and clues.'
-    ),
+    )
+    .optional(),
   numSecrets: z
     .number()
     .min(3)
-    .max(10)
-    .default(5)
+    .max(5)
+    .default(3)
     .describe('The number of secrets and clues to generate.'),
 });
 export type GenerateSecretsAndCluesInput = z.infer<
@@ -57,15 +59,11 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateSecretsAndCluesOutputSchema},
   prompt: `You are an experienced Game Master, skilled at creating engaging mysteries and plot hooks for tabletop RPGs.
 
-  Generate a list of secrets and clues that the players might uncover during the session. These secrets and clues should be related to the overall campaign setting, the potential scenes that might occur, and the motivations of the player characters. Focus on generating interesting and diverse secrets that can drive the plot forward. Do not number the secrets and clues. Return them as a simple list. 
+  Generate a list of {{numSecrets}} secrets and/or clues that the players might uncover during the session. These should be related to the overall campaign setting and character motivations provided. Focus on generating interesting and diverse items that can drive the plot forward. Do not number them.
 
   Campaign Setting: {{{campaignSetting}}}
-  Potential Scenes & Context: {{{potentialScenes}}}
-  Character Motivations: {{{characterMotivations}}}
-
-  Number of Secrets to generate: {{{numSecrets}}}
-
-  Secrets and Clues:
+  {{#if potentialScenes}}Potential Scenes & Context: {{{potentialScenes}}}{{/if}}
+  {{#if characterMotivations}}Character Motivations: {{{characterMotivations}}}{{/if}}
   `,
 });
 

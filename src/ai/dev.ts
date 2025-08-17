@@ -8,3 +8,5 @@ import '@/ai/flows/generate-plot-hook.ts';
 import '@/ai/flows/generate-npc.ts';
 import '@/ai/flows/generate-location.ts';
 import '@/ai/flows/generate-puzzle.ts';
+import '@/ai/flows/generate-magic-item.ts';
+import '@/ai/flows/generate-prophecy.ts';
