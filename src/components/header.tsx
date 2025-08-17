@@ -1,6 +1,7 @@
-import Link from "next/link";
-import { BookDashed, Library, Swords, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from 'next/link';
+import {BookDashed, Library, Swords, Shield} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {ThemeToggle} from '@/components/theme-toggle';
 
 export function Header() {
   return (
@@ -34,6 +35,9 @@ export function Header() {
                 Cockpit
               </Link>
             </Button>
+          </li>
+          <li>
+            <ThemeToggle />
           </li>
         </ul>
       </nav>

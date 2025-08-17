@@ -1,150 +1,150 @@
 "use client";
 
-import { useState, type ElementType, useEffect, useRef } from "react";
+import { useState, type ElementType } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Loader2, Edit3, Sparkles, Download } from "lucide-react";
+import { RefreshCw, Loader2, Sparkles, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
 
 interface GenerativeBlockProps {
   id: string;
   title: string;
   icon: ElementType;
-  initialContent?: string;
   generate: (userInput: string) => Promise<any>;
   format: (response: any) => string;
   onGenerated: (id: string, title: string, content: string) => void;
 }
 
-export function GenerativeBlock({ id, title, icon: Icon, initialContent = "", generate, format, onGenerated }: GenerativeBlockProps) {
-  const [content, setContent] = useState("");
+export function GenerativeBlock({
+  id,
+  title,
+  icon: Icon,
+  generate,
+  format,
+  onGenerated,
+}: GenerativeBlockProps) {
+  const [modalContent, setModalContent] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userInput, setUserInput] = useState("");
   const { toast } = useToast();
-  const hasGeneratedOnce = useRef(false);
 
-  const handleGenerate = async (isRegeneration = false) => {
-    // Only set loading if we are actually going to fetch new data.
-    if (!initialContent || isRegeneration) {
-        setIsLoading(true);
-        hasGeneratedOnce.current = true;
-        try {
-          const result = await generate(userInput);
-          const formattedContent = format(result);
-          setContent(formattedContent);
-          onGenerated(id, title, formattedContent);
-        } catch (error) {
-          console.error(error);
-          toast({
-            variant: "destructive",
-            title: `Error Generating ${title}`,
-            description: "Could not generate content. Please try again.",
-          });
-        } finally {
-          setIsLoading(false);
-        }
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    try {
+      const result = await generate(userInput);
+      const formattedContent = format(result);
+      setModalContent(formattedContent);
+      if (!isModalOpen) {
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: `Error Generating ${title}`,
+        description: "Could not generate content. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
-  
+
   const handleSave = () => {
-    if (!content) return;
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Content Saved",
-      description: `"${title.replace(/\s+/g, '-').toLowerCase()}.md" has been downloaded.`,
-    });
+    onGenerated(id, title, modalContent);
+    setIsModalOpen(false);
+    setUserInput("");
   };
-
-  useEffect(() => {
-    if (initialContent && !hasGeneratedOnce.current) {
-        setContent(initialContent);
-        onGenerated(id, title, initialContent);
-        hasGeneratedOnce.current = true;
-    }
-  }, [initialContent, id, title, onGenerated]);
-
 
   return (
-    <Card className="flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between p-3">
-            <CardTitle className="font-headline text-lg flex items-center gap-2">
-              <Icon className="h-5 w-5 text-accent" />
-              {title}
-            </CardTitle>
-            {hasGeneratedOnce.current &&
-              <div className="flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                       <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="user-input" className="border-b-0">
-                          <AccordionTrigger className="p-2 text-muted-foreground hover:no-underline hover:text-foreground rounded-md data-[state=open]:bg-muted/50 [&>svg]:hidden">
-                              <Edit3 className="h-4 w-4" />
-                          </AccordionTrigger>
-                          </AccordionItem>
-                      </Accordion>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add Detail</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                 <Button variant="ghost" size="icon" onClick={() => handleGenerate(true)} disabled={isLoading} aria-label={`Regenerate ${title}`}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleSave} disabled={!content || isLoading} aria-label="Save content">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            }
+    <>
+      <Card className="flex flex-col justify-center">
+        <CardHeader className="flex-row items-center justify-between p-4">
+          <CardTitle className="font-headline text-lg flex items-center gap-2">
+            <Icon className="h-5 w-5 text-accent" />
+            {title}
+          </CardTitle>
         </CardHeader>
-        <div className="px-3 pb-3">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="user-input" className="border-b-0">
-              <AccordionContent>
-                  <Textarea 
-                  placeholder="Provide a specific detail..."
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  className="mt-1 text-xs"
-                  aria-label="Optional user input"
-                  />
-              </AccordionContent>
-              </AccordionItem>
-          </Accordion>
-        </div>
+        <CardFooter className="p-4 pt-0">
+          <Button
+            onClick={handleGenerate}
+            disabled={isLoading && !isModalOpen}
+            size="sm"
+            className="w-full"
+          >
+            {isLoading && !isModalOpen ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Generate {title}
+          </Button>
+        </CardFooter>
+      </Card>
 
-        {!hasGeneratedOnce.current &&
-          <CardFooter className="p-3 pt-0">
-             <Button onClick={() => handleGenerate(false)} disabled={isLoading} size="sm" className="w-full">
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl flex items-center gap-2">
+              <Icon className="h-6 w-6 text-accent" />
               Generate {title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Add a specific detail to guide the generation..."
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              className="mb-4 text-sm"
+              aria-label="Optional user input"
+            />
+            <div className="relative">
+              <Textarea
+                value={modalContent}
+                onChange={(e) => setModalContent(e.target.value)}
+                className="min-h-[250px] bg-muted/50"
+                aria-label="Generated content"
+              />
+              {isLoading && (
+                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={handleGenerate}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Regenerate
             </Button>
-          </CardFooter>
-        }
-    </Card>
+            <div className="flex gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={handleSave}><Save className="mr-2" />Add to Notes</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

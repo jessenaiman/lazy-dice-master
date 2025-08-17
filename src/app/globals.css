@@ -4,48 +4,65 @@
 
 @layer base {
   :root {
-    --background: 60 56% 91%; /* parchment beige */
-    --foreground: 0 0% 15%; /* faded ink gray */
-    --card: 60 56% 95%;
-    --card-foreground: 0 0% 15%;
-    --popover: 60 56% 95%;
-    --popover-foreground: 0 0% 15%;
-    --primary: 0 100% 27%; /* deep red */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 35 55% 52%; /* Slightly lighter leather brown for secondary */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 60 20% 85%;
-    --muted-foreground: 0 0% 45.1%;
+    --background: 48 44% 95%; /* parchment light */
+    --foreground: 20 14% 4%; /* near black */
+    
+    --card: 48 40% 98%;
+    --card-foreground: 20 14% 4%;
+    
+    --popover: 48 40% 98%;
+    --popover-foreground: 20 14% 4%;
+    
+    --primary: 0 72% 51%; /* classic d&d red */
+    --primary-foreground: 60 93% 98%;
+    
+    --secondary: 35 45% 62%; /* lighter leather brown */
+    --secondary-foreground: 20 14% 4%;
+
+    --muted: 48 30% 91%;
+    --muted-foreground: 20 10% 35%;
+
     --accent: 35 55% 42%; /* old leather brown */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 35 20% 70%;
-    --input: 35 20% 80%;
-    --ring: 0 100% 27%;
+    --accent-foreground: 60 93% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 60 93% 98%;
+    
+    --border: 48 20% 80%;
+    --input: 48 20% 85%;
+    --ring: 0 72% 51%;
+    
     --radius: 0.5rem;
   }
  
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 72% 51%;
-    --primary-foreground: 0 86% 97%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 35 70% 50%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 0 72% 51%;
+    --background: 20 14% 4%; /* near black */
+    --foreground: 48 30% 91%; /* off-white */
+
+    --card: 20 14% 7%;
+    --card-foreground: 48 30% 91%;
+
+    --popover: 20 14% 7%;
+    --popover-foreground: 48 30% 91%;
+
+    --primary: 0 63% 42%; /* darker, richer red */
+    --primary-foreground: 60 93% 98%;
+
+    --secondary: 35 55% 22%; /* dark leather */
+    --secondary-foreground: 48 30% 91%;
+
+    --muted: 20 14% 10%;
+    --muted-foreground: 48 20% 60%;
+
+    --accent: 35 70% 50%; /* brighter leather for accents */
+    --accent-foreground: 20 14% 4%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 60 93% 98%;
+
+    --border: 20 14% 15%;
+    --input: 20 14% 15%;
+    --ring: 0 63% 42%;
   }
 }
 
@@ -55,5 +72,31 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact; 
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+  
+  main, .prose {
+    color: black !important;
+  }
+
+  .bg-card {
+    background-color: white !important;
+    border: 1px solid #ccc !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .prose-headings, .prose-strong {
+    color: black !important;
   }
 }
