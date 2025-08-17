@@ -10,7 +10,7 @@ import { generateNpc } from "@/ai/flows/generate-npc";
 import { generateLocation } from "@/ai/flows/generate-location";
 import { generatePuzzle } from "@/ai/flows/generate-puzzle";
 import { GenerativeBlock } from "@/components/generative-block";
-import { BrainCircuit, KeyRound, Map, Puzzle, Swords, User, Compass, Dices, Mic } from "lucide-react";
+import { KeyRound, Map, Puzzle, Swords, User, Compass } from "lucide-react";
 
 export default function CockpitPage() {
   const campaign = mockCampaigns[0];
@@ -27,7 +27,7 @@ export default function CockpitPage() {
     <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex-1 p-4 md:p-8">
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <GenerativeBlock
             title="Strong Start"
             fileName="strong-start"
@@ -72,7 +72,7 @@ export default function CockpitPage() {
             icon={User}
             generate={async (userInput) => {
                 const result = await generateNpc({ campaignSetting: `${campaignContext.campaignSetting}\n\n${userInput}` });
-                return `**${result.name}**\n*${result.description}*\n\n**Mannerisms:**\n- ${result.mannerisms.join('\n- ')}\n\n**Portrait:**\n![NPC Portrait](https://placehold.co/400x400.png?text=${encodeURIComponent(result.name)})`;
+                return `**${result.name}**\n*${result.description}*\n\n**Mannerisms:**\n- ${result.mannerisms.join('\n- ')}`;
             }}
           />
           <GenerativeBlock

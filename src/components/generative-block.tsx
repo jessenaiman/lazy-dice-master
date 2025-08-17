@@ -34,10 +34,6 @@ export function GenerativeBlock({ title, fileName, icon: Icon, initialContent = 
     try {
       const result = await generate(userInput);
       setContent(result);
-      toast({
-        title: `${title} Generated`,
-        description: "The content has been updated.",
-      });
     } catch (error) {
       console.error(error);
       toast({
@@ -85,7 +81,15 @@ export function GenerativeBlock({ title, fileName, icon: Icon, initialContent = 
     if (!content) {
         return <p className="text-sm text-muted-foreground">Click "Generate" to create content.</p>
     }
-    return <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/!\[.*?\]\((.*?)\)/g, '<img src="$1" class="rounded-md border" />') }}></div>
+    // A simple markdown to html renderer
+    const htmlContent = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // bold
+      .replace(/\*(.*?)\*/g, '<em>$1</em>') // italic
+      .replace(/!\[.*?\]\((.*?)\)/g, '<img src="$1" class="rounded-md border" />') // image
+      .replace(/(\n- .*?)+/g, (match) => `<ul>${match.replace(/\n- (.*)/g, '<li>$1</li>')}</ul>`) // lists
+      .replace(/\n/g, '<br />'); // newlines
+
+    return <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: htmlContent }}></div>
   }
 
   const ContentWrapper = hasGeneratedOnce.current ? Card : Accordion;
@@ -94,32 +98,34 @@ export function GenerativeBlock({ title, fileName, icon: Icon, initialContent = 
   const ContentContainer = hasGeneratedOnce.current ? CardContent : AccordionContent;
 
   return (
-    <ContentWrapper type="single" collapsible className="w-full" value={hasGeneratedOnce.current ? undefined : "item-1"}>
+    <ContentWrapper type="single" collapsible className="w-full" defaultValue={hasGeneratedOnce.current ? "item-1" : undefined}>
       <ItemWrapper value="item-1" className={hasGeneratedOnce.current ? '' : 'border-b-0'}>
-        <Card className={!hasGeneratedOnce.current ? "border-0 shadow-none" : ""}>
+        <Card className={`${!hasGeneratedOnce.current ? "border-0 shadow-none" : ""} flex flex-col h-full`}>
           <CardHeader className="flex flex-row items-center justify-between p-4">
               <TriggerWrapper className={!hasGeneratedOnce.current ? "font-headline text-2xl flex items-center gap-2 w-full" : ''}>
-                <CardTitle className="font-headline text-2xl flex items-center gap-2">
-                  <Icon className="h-6 w-6 text-accent" />
+                <CardTitle className="font-headline text-xl flex items-center gap-2">
+                  <Icon className="h-5 w-5 text-accent" />
                   {title}
                 </CardTitle>
               </TriggerWrapper>
               {hasGeneratedOnce.current &&
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" size="icon" onClick={handleGenerate} disabled={isLoading} aria-label={`Regenerate ${title}`}>
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   </Button>
                   <Button variant="ghost" size="icon" onClick={handleSave} disabled={!content || isLoading} aria-label="Save content">
-                    <Download className="h-5 w-5" />
+                    <Download className="h-4 w-4" />
                   </Button>
                 </div>
               }
           </CardHeader>
-          <ContentContainer className="p-4 pt-0">
+          <ContentContainer className="p-4 pt-0 flex-grow">
             {renderContent()}
-             <Accordion type="single" collapsible className="w-full mt-4">
+          </ContentContainer>
+           <CardFooter className="p-4 pt-0 mt-auto">
+             <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="user-input" className="border-b-0">
-                <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-1">
+                <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-1 pt-2 justify-start">
                     <Edit3 className="mr-2 h-3 w-3" />
                     Add Detail (Optional)
                 </AccordionTrigger>
@@ -134,7 +140,7 @@ export function GenerativeBlock({ title, fileName, icon: Icon, initialContent = 
                 </AccordionContent>
                 </AccordionItem>
             </Accordion>
-          </ContentContainer>
+          </CardFooter>
           {!hasGeneratedOnce.current &&
             <CardFooter className="p-4 pt-0">
                <Button onClick={handleGenerate} disabled={isLoading}>
