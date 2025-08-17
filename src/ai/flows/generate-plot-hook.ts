@@ -15,7 +15,7 @@ import {z} from 'genkit';
 
 const GeneratePlotHookInputSchema = z.object({
   campaignSetting: z.string().describe('The general setting of the campaign.'),
-  playerCharacters: z.string().describe('A description of the player characters and their motivations.'),
+  playerCharacters: z.string().describe('A description of the player characters, their motivations, and any specific user requests.'),
 });
 export type GeneratePlotHookInput = z.infer<typeof GeneratePlotHookInputSchema>;
 
@@ -37,7 +37,7 @@ const prompt = ai.definePrompt({
   Based on the provided campaign setting and player characters, generate a compelling plot hook and three related clues.
 
   Campaign Setting: {{{campaignSetting}}}
-  Player Characters: {{{playerCharacters}}}
+  Player Characters & Context: {{{playerCharacters}}}
 
   The plot hook should be a single paragraph. The clues should be three distinct, actionable pieces of information that the players can discover.
   `,

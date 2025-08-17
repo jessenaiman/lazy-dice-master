@@ -14,7 +14,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateNpcInputSchema = z.object({
-  campaignSetting: z.string().describe('The general setting of the campaign (e.g., dark fantasy, high fantasy, sci-fi).'),
+  campaignSetting: z.string().describe('The general setting of the campaign and any specific user requests (e.g., "a grumpy blacksmith").'),
 });
 export type GenerateNpcInput = z.infer<typeof GenerateNpcInputSchema>;
 
@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateNpcOutputSchema},
   prompt: `You are a character designer for tabletop RPGs. Create a unique Non-Player Character (NPC) based on the campaign setting.
 
-  Campaign Setting: {{{campaignSetting}}}
+  Campaign Setting & Context: {{{campaignSetting}}}
 
   Generate a name, a one-sentence description, and three distinct mannerisms for the NPC.
   `,

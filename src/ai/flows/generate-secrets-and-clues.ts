@@ -19,7 +19,7 @@ const GenerateSecretsAndCluesInputSchema = z.object({
     .describe('The campaign setting for the RPG session.'),
   potentialScenes: z
     .string()
-    .describe('A list of potential scenes that might occur during the session.'),
+    .describe('A list of potential scenes that might occur during the session and any other user-provided context.'),
   characterMotivations: z
     .string()
     .describe(
@@ -60,7 +60,7 @@ const prompt = ai.definePrompt({
   Generate a list of secrets and clues that the players might uncover during the session. These secrets and clues should be related to the overall campaign setting, the potential scenes that might occur, and the motivations of the player characters. Focus on generating interesting and diverse secrets that can drive the plot forward. Do not number the secrets and clues. Return them as a simple list. 
 
   Campaign Setting: {{{campaignSetting}}}
-  Potential Scenes: {{{potentialScenes}}}
+  Potential Scenes & Context: {{{potentialScenes}}}
   Character Motivations: {{{characterMotivations}}}
 
   Number of Secrets to generate: {{{numSecrets}}}

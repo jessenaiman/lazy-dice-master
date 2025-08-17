@@ -18,7 +18,7 @@ import {z} from 'genkit';
 
 const GenerateStrongStartInputSchema = z.object({
   campaignSetting: z.string().describe('The setting of the campaign.'),
-  playerCharacters: z.string().describe('A description of the player characters in the campaign.'),
+  playerCharacters: z.string().describe('A description of the player characters in the campaign, and any specific user requests.'),
 });
 export type GenerateStrongStartInput = z.infer<typeof GenerateStrongStartInputSchema>;
 
@@ -39,7 +39,7 @@ const prompt = ai.definePrompt({
   Based on the campaign setting and player characters provided, generate a "Strong Start" to hook the players.
 
   Campaign Setting: {{{campaignSetting}}}
-  Player Characters: {{{playerCharacters}}}
+  Player Characters & Context: {{{playerCharacters}}}
 
   Strong Start:`,
 });

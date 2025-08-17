@@ -14,7 +14,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateLocationInputSchema = z.object({
-  campaignSetting: z.string().describe('The general setting of the campaign (e.g., dark fantasy, high fantasy, post-apocalyptic).'),
+  campaignSetting: z.string().describe('The general setting of the campaign (e.g., dark fantasy, high fantasy, post-apocalyptic) and any user-provided context.'),
 });
 export type GenerateLocationInput = z.infer<typeof GenerateLocationInputSchema>;
 
@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateLocationOutputSchema},
   prompt: `You are a world-building expert for tabletop RPGs. Create a compelling fantasy location based on the provided campaign setting.
 
-  Campaign Setting: {{{campaignSetting}}}
+  Campaign Setting & Context: {{{campaignSetting}}}
 
   Generate a unique name, a detailed two-paragraph description, and three distinct clues or secrets associated with the location. The clues should be mysterious and provide hooks for further adventure.
   `,
