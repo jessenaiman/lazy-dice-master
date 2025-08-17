@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookDashed, Library, Swords } from "lucide-react";
+import { BookDashed, Library, Swords, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
@@ -13,8 +13,8 @@ export function Header() {
         <ul className="flex items-center justify-end gap-2">
           <li>
             <Button variant="ghost" asChild>
-              <Link href="/">
-                <Swords className="mr-2 h-4 w-4" />
+              <Link href="/campaigns">
+                <Shield className="mr-2 h-4 w-4" />
                 Campaigns
               </Link>
             </Button>
@@ -29,7 +29,7 @@ export function Header() {
           </li>
           <li>
             <Button variant="ghost" asChild>
-              <Link href="/cockpit">
+              <Link href="/">
                 <Swords className="mr-2 h-4 w-4" />
                 Cockpit
               </Link>
