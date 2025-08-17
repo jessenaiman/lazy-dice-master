@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ElementType } from "react";
+import { useState, type ElementType, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2 } from "lucide-react";
@@ -40,7 +40,7 @@ export function GenerativeBlock({ title, icon: Icon, initialContent = "", genera
   };
   
   // Automatically generate content if there is no initial content
-  useState(() => {
+  useEffect(() => {
     if (!initialContent) {
       handleGenerate();
     }
