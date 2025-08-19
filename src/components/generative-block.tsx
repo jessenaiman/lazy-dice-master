@@ -9,11 +9,11 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Loader2, Sparkles, Save } from "lucide-react";
+import { RefreshCw, Loader2, Sparkles, Save, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TiptapEditor } from "./tiptap-editor";
 
 interface GenerativeBlockProps {
   id: string;
@@ -67,32 +67,27 @@ export function GenerativeBlock({
 
   return (
     <>
-      <Card className="flex flex-col justify-center">
-        <CardHeader className="flex-row items-center justify-between p-4">
-          <CardTitle className="font-headline text-lg flex items-center gap-2">
-            <Icon className="h-5 w-5 text-accent" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardFooter className="p-4 pt-0">
-          <Button
-            onClick={handleGenerate}
-            disabled={isLoading && !isModalOpen}
-            size="sm"
-            className="w-full"
-          >
-            {isLoading && !isModalOpen ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Generate {title}
-          </Button>
-        </CardFooter>
+      <Card
+        className="flex flex-col justify-center cursor-pointer group hover:bg-accent/50 transition-colors duration-200"
+        onClick={handleGenerate}
+      >
+        <CardContent className="p-4 flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <Icon className="h-5 w-5 text-accent group-hover:text-accent-foreground transition-colors duration-200" />
+            <h3 className="font-headline text-lg group-hover:text-accent-foreground transition-colors duration-200">
+                {isLoading && !isModalOpen ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4 inline-block" />
+                )}
+              Generate {title}
+            </h3>
+          </div>
+        </CardContent>
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-2xl w-full mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl flex items-center gap-2">
               <Icon className="h-6 w-6 text-accent" />
@@ -100,26 +95,7 @@ export function GenerativeBlock({
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <Textarea
-              placeholder="Add a specific detail to guide the generation..."
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              className="mb-4 text-sm"
-              aria-label="Optional user input"
-            />
-            <div className="relative">
-              <Textarea
-                value={modalContent}
-                onChange={(e) => setModalContent(e.target.value)}
-                className="min-h-[250px] bg-muted/50"
-                aria-label="Generated content"
-              />
-              {isLoading && (
-                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              )}
-            </div>
+            <TiptapEditor content={modalContent} onChange={setModalContent} />
           </div>
           <DialogFooter className="sm:justify-between">
             <Button
