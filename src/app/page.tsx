@@ -50,8 +50,9 @@ const renderContentWithFantasyIcons = (content: string) => {
     .replace(/<ul>/g, '<ul class="list-none p-0">')
     .replace(
       /<li>/g,
-      '<li class="flex items-start mb-1"><span class="mr-3 mt-1 text-accent shrink-0">⚔️</span>'
-    );
+      '<li class="flex items-start mb-2"><span class="mr-3 mt-1 text-accent shrink-0">⚔️</span><span>'
+    )
+    .replace(/<\/li>/g, '</span></li>');
 
   return processedContent;
 };

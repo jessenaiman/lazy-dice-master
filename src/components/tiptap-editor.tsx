@@ -1,12 +1,12 @@
 // src/components/tiptap-editor.tsx
 "use client";
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import { Bold, Italic, Strikethrough, Code, Pilcrow, List, ListOrdered } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Heading2, Heading3, List, ListOrdered } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { useEffect } from 'react';
 
@@ -16,6 +16,25 @@ interface TiptapEditorProps {
   placeholder?: string;
   isLoading?: boolean;
 }
+
+function EditorToolbar({ editor }: { editor: any }) {
+  if (!editor) {
+    return null;
+  }
+
+  return (
+     <div className="border border-input bg-transparent rounded-t-md p-1 flex gap-1">
+      <Button variant={editor.isActive('bold') ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('italic') ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('strike') ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('heading', { level: 2 }) ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('heading', { level: 3 }) ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('bulletList') ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()}><List className="h-4 w-4"/></Button>
+      <Button variant={editor.isActive('orderedList') ? "secondary" : "ghost"} size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered className="h-4 w-4"/></Button>
+    </div>
+  )
+}
+
 
 export function TiptapEditor({ content, onChange, placeholder, isLoading }: TiptapEditorProps) {
   const editor = useEditor({
@@ -47,7 +66,7 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading }: Tipt
       attributes: {
         class: cn(
           'prose prose-sm dark:prose-invert max-w-none font-body',
-          'min-h-[250px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background',
+          'min-h-[250px] w-full rounded-b-md border border-input bg-background px-3 py-2 text-base ring-offset-background border-t-0',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
         ),
@@ -60,8 +79,8 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading }: Tipt
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+    if (editor && !editor.isFocused && content !== editor.getHTML()) {
+      editor.commands.setContent(content, false);
     }
   }, [content, editor]);
   
@@ -83,15 +102,7 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading }: Tipt
 
   return (
     <div className="relative">
-       {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="bg-background border border-border shadow-lg rounded-md p-1 flex gap-1">
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold className="h-4 w-4"/></Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic className="h-4 w-4"/></Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''}><Strikethrough className="h-4 w-4"/></Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''} >H2</Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''} >H3</Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}><List className="h-4 w-4"/></Button>
-        <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}><ListOrdered className="h-4 w-4"/></Button>
-      </BubbleMenu>}
+      <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
     </div>
   )
