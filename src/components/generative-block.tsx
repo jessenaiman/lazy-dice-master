@@ -1,3 +1,4 @@
+// src/components/generative-block.tsx
 "use client";
 
 import { useState, type ElementType } from "react";
@@ -38,6 +39,7 @@ interface GenerativeBlockProps {
   format: (response: any) => string;
   onGenerated: (id: string, title: string, content: string) => void;
   options?: Option[];
+  isActionable?: boolean;
 }
 
 export function GenerativeBlock({
@@ -47,7 +49,8 @@ export function GenerativeBlock({
   generate,
   format,
   onGenerated,
-  options: blockOptions = []
+  options: blockOptions = [],
+  isActionable = false,
 }: GenerativeBlockProps) {
   const [modalContent, setModalContent] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,8 +115,9 @@ export function GenerativeBlock({
   return (
     <>
       <Card
-        className="flex flex-col justify-center cursor-pointer group hover:border-primary transition-colors duration-200"
-        onClick={handleGenerate}
+        className="flex flex-col justify-center cursor-pointer group hover:border-primary transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={isActionable ? handleGenerate : undefined}
+        aria-disabled={!isActionable}
       >
         <CardContent className="p-4 flex items-center justify-center">
           <div className="flex items-center gap-3 text-center">

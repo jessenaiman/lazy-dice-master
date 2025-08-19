@@ -1,9 +1,10 @@
 // src/app/page.tsx
 'use client';
 
-import {useState, useRef, useEffect} from 'react';
+import {useState, useRef, useEffect, ChangeEvent} from 'react';
 import Link from 'next/link';
 import {Header} from '@/components/header';
+import {generateCampaignContext} from '@/ai/flows/generate-campaign-context';
 import {generateStrongStart} from '@/ai/flows/generate-strong-start';
 import {generateSecretsAndClues} from '@/ai/flows/generate-secrets-and-clues';
 import {generatePlotHook} from '@/ai/flows/generate-plot-hook';
@@ -20,10 +21,13 @@ import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from '@/components/ui/input';
 import {
   KeyRound,
   Map,
@@ -37,9 +41,12 @@ import {
   BookOpen,
   Printer,
   Save,
-  ChevronUp,
+  ChevronDown,
   BrainCircuit,
   Box,
+  PlusCircle,
+  Loader2,
+  Upload,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
@@ -49,31 +56,92 @@ import type { Campaign, SessionPrep } from '@/lib/types';
 const CAMPAIGNS_STORAGE_KEY = 'lazy-gm-campaigns';
 const ACTIVE_CAMPAIGN_ID_KEY = 'lazy-gm-active-campaign-id';
 
+
 export default function CockpitPage() {
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const [sessionNotes, setSessionNotes] = useState<string>("");
+  const [isGeneratingCampaign, setIsGeneratingCampaign] = useState(false);
+  const [newCampaignName, setNewCampaignName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { toast } = useToast();
 
+  // Load campaigns from local storage on initial render
   useEffect(() => {
+    const savedCampaigns = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
+    const allCampaigns: Campaign[] = savedCampaigns ? JSON.parse(savedCampaigns) : [];
+    setCampaigns(allCampaigns);
+    
     const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
-    const allCampaignsJSON = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
-
-    if (allCampaignsJSON) {
-      const allCampaigns: Campaign[] = JSON.parse(allCampaignsJSON);
-      if (activeId) {
-        const activeCampaign = allCampaigns.find(c => c.id === activeId);
-        setCampaign(activeCampaign || allCampaigns[0] || null);
-      } else if (allCampaigns.length > 0) {
-        setCampaign(allCampaigns[0]);
-        localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, allCampaigns[0].id);
-      }
+    if (activeId) {
+      const foundCampaign = allCampaigns.find(c => c.id === activeId);
+      setActiveCampaign(foundCampaign || null);
+    } else if (allCampaigns.length > 0) {
+      setActiveCampaign(allCampaigns[0]);
+      localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, allCampaigns[0].id);
     }
   }, []);
 
+  const saveCampaignsToStorage = (updatedCampaigns: Campaign[]) => {
+    setCampaigns(updatedCampaigns);
+    localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(updatedCampaigns));
+  }
+
+  const handleSetActiveCampaign = (campaignId: string) => {
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (campaign) {
+      setActiveCampaign(campaign);
+      localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, campaignId);
+      // Reset session notes when switching campaigns
+      setSessionNotes("");
+    }
+  };
+  
+  const handleNewCampaign = async () => {
+    setIsGeneratingCampaign(true);
+    try {
+        const context = await generateCampaignContext({ theme: 'fantasy' });
+        const finalName = newCampaignName.trim() || context.name;
+        
+        const newCampaign: Campaign = {
+            id: crypto.randomUUID(),
+            name: finalName,
+            description: context.description,
+            characters: context.characters.map(c => ({...c, id: crypto.randomUUID()})),
+            sessionPreps: [],
+        };
+        const updatedCampaigns = [...campaigns, newCampaign];
+        saveCampaignsToStorage(updatedCampaigns);
+        setActiveCampaign(newCampaign);
+        localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, newCampaign.id);
+        setNewCampaignName("");
+        toast({ title: "Campaign Created!", description: `${newCampaign.name} is ready.` });
+    } catch (error) {
+        console.error(error);
+        toast({ variant: "destructive", title: "Failed to generate campaign context." });
+    } finally {
+        setIsGeneratingCampaign(false);
+    }
+  };
+
+  const handleSaveActiveCampaign = () => {
+    if (!activeCampaign) return;
+    const updatedCampaigns = campaigns.map(c => c.id === activeCampaign.id ? activeCampaign : c);
+    saveCampaignsToStorage(updatedCampaigns);
+    toast({ title: "Campaign Saved!", description: `${activeCampaign.name} has been updated.`});
+  };
+
+  const handleCampaignDescriptionChange = (newDescription: string) => {
+    if (activeCampaign) {
+      setActiveCampaign({...activeCampaign, description: newDescription});
+    }
+  }
+  
   const getCampaignContext = () => {
-    if (!campaign) return "No campaign loaded.";
-    const characterInfo = campaign.characters.map(c => `- ${c.name}: ${c.motivation}`).join('\n');
-    return `${campaign.description}\n\n**Characters**:\n${characterInfo}`;
+    if (!activeCampaign) return "No campaign loaded.";
+    const characterInfo = activeCampaign.characters.map(c => `- ${c.name}: ${c.motivation}`).join('\n');
+    return `${activeCampaign.description}\n\n**Characters**:\n${characterInfo}`;
   };
   
   const handleContentGenerated = (
@@ -97,24 +165,25 @@ export default function CockpitPage() {
         .join('\n');
       printWindow.document.write(styles);
       printWindow.document.write(`<style>
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Open+Sans:wght@400;600&display=swap');
+        body { 
+            font-family: 'Open Sans', sans-serif;
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+        }
+        .prose h1, .prose h2, .prose h3 { font-family: 'Cinzel', serif; }
         .prose ul { list-style: none; padding-left: 0; }
         .prose ul > li::before { 
           content: '⚔️'; 
           margin-right: 0.75em; 
           color: hsl(var(--accent));
-          display: inline-block;
-          width: 1em; /* Ensure consistent alignment */
-          margin-left: -1em; /* Pull icon back into margin */
         }
-        .prose ul > li {
-          padding-left: 1.5em; /* Indent text to align with icon */
-          text-indent: -0.5em;
+         .prose ul > li {
+          padding-left: 1.5em; 
+          text-indent: -1.5em; 
         }
       </style>`);
       printWindow.document.write('</head><body class="bg-background text-foreground">');
-      const turndownService = new TurndownService();
-      const sessionMarkdown = turndownService.turndown(sessionNotes);
       const contentDiv = document.createElement('div');
       contentDiv.innerHTML = sessionNotes;
       contentDiv.className = 'prose dark:prose-invert max-w-none p-8';
@@ -122,29 +191,14 @@ export default function CockpitPage() {
       setTimeout(() => {
           printWindow.print();
           printWindow.close();
-      }, 500); // Wait for styles to load
+      }, 500);
     }
-  };
-
-  const handleSave = () => {
-    const turndownService = new TurndownService({ headingStyle: 'atx' });
-    
-    if (campaign) {
-       const campaignContent = new TurndownService().turndown(campaign.description);
-       saveMarkdown(campaignContent, `campaign-${campaign.name.replace(/\s/g, '_')}.md`);
-    }
-
-    const sessionMarkdown = turndownService.turndown(sessionNotes);
-    saveMarkdown(sessionMarkdown, `session-notes-${new Date().toISOString()}.md`);
-    
-    toast({
-      title: 'Content Saved',
-      description: 'Your campaign context and session notes have been downloaded as markdown files.',
-    });
   };
 
   const saveMarkdown = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const turndownService = new TurndownService({ headingStyle: 'atx' });
+    const markdown = turndownService.turndown(content);
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -154,20 +208,36 @@ export default function CockpitPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  
-  const handleCampaignUpdate = (updatedCampaign: Campaign) => {
-    setCampaign(updatedCampaign);
-    const allCampaignsJSON = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
-    if (allCampaignsJSON) {
-        const allCampaigns: Campaign[] = JSON.parse(allCampaignsJSON);
-        const campaignIndex = allCampaigns.findIndex(c => c.id === updatedCampaign.id);
-        if (campaignIndex !== -1) {
-            allCampaigns[campaignIndex] = updatedCampaign;
-            localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(allCampaigns));
-        }
-    }
-  }
 
+  const handleSaveFiles = () => {
+    if (activeCampaign) {
+       saveMarkdown(activeCampaign.description, `campaign-${activeCampaign.name.replace(/\s/g, '_')}.md`);
+    }
+    saveMarkdown(sessionNotes, `session-notes-${new Date().toISOString().split('T')[0]}.md`);
+    toast({
+      title: 'Content Saved',
+      description: 'Your campaign and session notes have been downloaded as markdown files.',
+    });
+  };
+
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !activeCampaign) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      handleCampaignDescriptionChange(activeCampaign.description + '\n\n' + text);
+      toast({title: "File Content Added", description: `Content from ${file.name} has been added to the campaign context.`});
+    };
+    
+    if (file.type === 'text/plain' || file.type === 'text/markdown') {
+        reader.readAsText(file);
+    } else {
+        toast({variant: 'destructive', title: "Unsupported File Type", description: "Please upload a .txt or .md file."})
+    }
+  };
+  
   const toolkitBlocks = [
     {
       id: 'strong-start',
@@ -177,7 +247,7 @@ export default function CockpitPage() {
         (
           await generateStrongStart({
             campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
-            playerCharacters: campaign?.characters.map(c => c.name).join(', ') || "",
+            playerCharacters: activeCampaign?.characters.map(c => c.name).join(', ') || "",
           })
         ).strongStart,
       format: (c: any) => `<h2>Strong Start</h2><ul><li>${c.join('</li><li>')}</li></ul>`,
@@ -189,7 +259,7 @@ export default function CockpitPage() {
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generatePlotHook({
           campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
-          playerCharacters: campaign?.characters.map(c => c.name).join(', ') || "",
+          playerCharacters: activeCampaign?.characters.map(c => c.name).join(', ') || "",
         }),
       format: (r: any) =>
         `<h2>Plot Hook</h2><h3>Hook</h3><p>${r.hook}</p><h3>Clues</h3><ul><li>${r.clues.join(
@@ -319,21 +389,6 @@ export default function CockpitPage() {
     },
   ];
 
-  if (!campaign) {
-    return (
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
-          <Header />
-          <main className="text-center">
-            <h1 className="font-headline text-2xl mb-2">No Active Campaign</h1>
-            <p className="text-muted-foreground mb-4">Please create or select an active campaign from the Campaigns page.</p>
-            <Button asChild>
-                <Link href="/campaigns">Go to Campaigns</Link>
-            </Button>
-          </main>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body transition-colors duration-300">
       <Header />
@@ -353,6 +408,7 @@ export default function CockpitPage() {
                   format={block.format}
                   onGenerated={handleContentGenerated}
                   options={block.options}
+                  isActionable={!!activeCampaign}
                 />
               ))}
             </div>
@@ -361,30 +417,54 @@ export default function CockpitPage() {
 
         {/* Right Column: Session Notes & Context */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-          <Collapsible defaultOpen={true}>
             <Card>
-                <CollapsibleTrigger className="w-full">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-headline flex items-center justify-between">
-                      <span>Campaign: {campaign.name}</span>
-                       <Button variant="ghost" size="sm" className="data-[state=open]:rotate-180">
-                         <ChevronUp className="h-4 w-4" />
-                         <span className="sr-only">Toggle Context</span>
-                       </Button>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg font-headline flex items-center gap-2">
+                      <span>Campaign: {activeCampaign?.name || "No Active Campaign"}</span>
                     </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
-              <CollapsibleContent>
+                     <div className="flex items-center gap-2">
+                          <Input
+                            placeholder="New campaign name..."
+                            value={newCampaignName}
+                            onChange={(e) => setNewCampaignName(e.target.value)}
+                            className="w-48 h-9"
+                            disabled={isGeneratingCampaign}
+                          />
+                         <Button size="sm" onClick={handleNewCampaign} disabled={isGeneratingCampaign}>
+                           {isGeneratingCampaign ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+                         </Button>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
+                                    Load <ChevronDown className="ml-2 h-4 w-4"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {campaigns.map(c => (
+                                    <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
+                                        {c.name}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                         </DropdownMenu>
+                         <Button size="sm" variant="outline" onClick={handleSaveActiveCampaign} disabled={!activeCampaign}>
+                            <Save />
+                         </Button>
+                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.md" className="hidden" />
+                         <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={!activeCampaign}>
+                            <Upload />
+                         </Button>
+                     </div>
+                </CardHeader>
                 <CardContent>
                   <TiptapEditor
-                    content={campaign.description}
-                    onChange={(newDescription) => handleCampaignUpdate({...campaign, description: newDescription})}
-                    placeholder="Campaign context appears here..."
+                    content={activeCampaign?.description || ""}
+                    onChange={handleCampaignDescriptionChange}
+                    placeholder="Create or load a campaign to begin..."
+                    editable={!!activeCampaign}
                   />
                 </CardContent>
-              </CollapsibleContent>
             </Card>
-          </Collapsible>
 
           <div className="bg-card border rounded-lg shadow-sm h-full flex flex-col flex-grow">
             <div className="p-4 flex items-center justify-between border-b">
@@ -392,10 +472,10 @@ export default function CockpitPage() {
                 <BookOpen /> Session Notes
               </h2>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Save Notes
+                <Button variant="outline" size="sm" onClick={handleSaveFiles} disabled={!activeCampaign}>
+                  <Save className="mr-2 h-4 w-4" /> Save Files
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Button variant="outline" size="sm" onClick={handlePrint} disabled={!activeCampaign || !sessionNotes}>
                   <Printer className="mr-2 h-4 w-4" /> Print
                 </Button>
               </div>
@@ -405,6 +485,7 @@ export default function CockpitPage() {
                 content={sessionNotes}
                 onChange={setSessionNotes}
                 placeholder="Your generated content will appear here. Use the GM's Toolkit on the left to get started."
+                editable={!!activeCampaign}
               />
             </div>
           </div>
