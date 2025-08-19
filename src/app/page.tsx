@@ -98,7 +98,19 @@ export default function CockpitPage() {
       printWindow.document.write(styles);
       printWindow.document.write(`<style>
         body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .prose ul > li::before { content: '⚔️'; margin-right: 0.75em; color: hsl(var(--accent)); }
+        .prose ul { list-style: none; padding-left: 0; }
+        .prose ul > li::before { 
+          content: '⚔️'; 
+          margin-right: 0.75em; 
+          color: hsl(var(--accent));
+          display: inline-block;
+          width: 1em; /* Ensure consistent alignment */
+          margin-left: -1em; /* Pull icon back into margin */
+        }
+        .prose ul > li {
+          padding-left: 1.5em; /* Indent text to align with icon */
+          text-indent: -0.5em;
+        }
       </style>`);
       printWindow.document.write('</head><body class="bg-background text-foreground">');
       const turndownService = new TurndownService();

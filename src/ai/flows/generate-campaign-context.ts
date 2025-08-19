@@ -25,8 +25,8 @@ const CharacterSchema = z.object({
 });
 
 const GenerateCampaignContextOutputSchema = z.object({
-  name: z.string().describe('A catchy name for the campaign.'),
-  description: z.string().describe('A two-paragraph description of the campaign setting and central conflict.'),
+  name: z.string().describe('A catchy and highly original name for the campaign. Avoid common fantasy names like "Eldoria".'),
+  description: z.string().describe('A two-paragraph description of the campaign setting and central conflict. Make it unique and avoid cliches.'),
   characters: z.array(CharacterSchema).length(3).describe('An array of three distinct player characters.'),
 });
 export type GenerateCampaignContextOutput = z.infer<typeof GenerateCampaignContextOutputSchema>;
@@ -39,13 +39,13 @@ const prompt = ai.definePrompt({
   name: 'generateCampaignContextPrompt',
   input: {schema: GenerateCampaignContextInputSchema},
   output: {schema: GenerateCampaignContextOutputSchema},
-  prompt: `You are a creative world-builder for tabletop RPGs.
-  
-  {{#if theme}}The user wants a campaign with a "{{theme}}" theme.{{else}}The user has not specified a theme, so create a classic high fantasy campaign.{{/if}}
+  prompt: `You are a creative world-builder for tabletop RPGs, known for your highly original and unique ideas.
+
+  {{#if theme}}The user wants a campaign with a "{{theme}}" theme.{{else}}The user has not specified a theme, so create a classic high fantasy campaign, but make it feel fresh and new.{{/if}}
 
   Generate a compelling campaign context that includes:
-  1. A unique and evocative campaign name.
-  2. A rich, two-paragraph description of the world, its main conflict, and what makes it interesting.
+  1. A unique and evocative campaign name. Do NOT use common or generic fantasy names (e.g., Eldoria, Silver-something, Dragon-something). Be creative and original.
+  2. A rich, two-paragraph description of the world, its main conflict, and what makes it interesting. Avoid tired fantasy tropes.
   3. Three pre-made player characters, each with a name, a one-sentence description, and a clear motivation that ties them to the campaign's conflict.
   `,
 });

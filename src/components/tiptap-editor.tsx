@@ -44,13 +44,12 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading, editab
       StarterKit.configure({
         bulletList: {
           HTMLAttributes: {
-            class: 'list-none p-0', // Custom class to remove default list style
+            class: 'list-none p-0',
           },
-          // We will use CSS to add our custom icon
         },
         listItem: {
             HTMLAttributes: {
-                class: 'flex items-start mb-2',
+                class: 'flex items-start mb-2 before:content-["⚔️"] before:mr-3 before:text-accent before:inline-block before:w-4',
             }
         },
         orderedList: {
