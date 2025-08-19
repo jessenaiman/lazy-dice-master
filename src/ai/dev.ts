@@ -11,3 +11,5 @@ import '@/ai/flows/generate-puzzle.ts';
 import '@/ai/flows/generate-magic-item.ts';
 import '@/ai/flows/generate-prophecy.ts';
 import '@/ai/flows/generate-campaign-context.ts';
+import '@/ai/flows/generate-riddle.ts';
+import '@/ai/flows/generate-random-contents.ts';

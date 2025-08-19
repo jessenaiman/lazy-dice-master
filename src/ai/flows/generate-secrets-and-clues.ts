@@ -40,8 +40,8 @@ export type GenerateSecretsAndCluesInput = z.infer<
 
 const GenerateSecretsAndCluesOutputSchema = z.object({
   secrets: z
-    .array(z.string())
-    .describe('An array of secrets and clues related to the campaign and scenes.'),
+    .array(z.string()).min(3).max(5)
+    .describe('An array of secrets and clues related to the campaign and scenes. Vary the length and complexity of each item.'),
 });
 export type GenerateSecretsAndCluesOutput = z.infer<
   typeof GenerateSecretsAndCluesOutputSchema
@@ -59,7 +59,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateSecretsAndCluesOutputSchema},
   prompt: `You are an experienced Game Master, skilled at creating engaging mysteries and plot hooks for tabletop RPGs.
 
-  Generate a list of {{numSecrets}} secrets and/or clues that the players might uncover during the session. These should be related to the overall campaign setting and character motivations provided. Focus on generating interesting and diverse items that can drive the plot forward. Do not number them.
+  Generate a list of {{numSecrets}} secrets and/or clues that the players might uncover during the session. These should be related to the overall campaign setting and character motivations provided. Focus on generating interesting and diverse items that can drive the plot forward. Do not number them. Vary the length and complexity of each item to resemble a list from a GM guide.
 
   Campaign Setting: {{{campaignSetting}}}
   {{#if potentialScenes}}Potential Scenes & Context: {{{potentialScenes}}}{{/if}}

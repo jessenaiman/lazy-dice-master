@@ -11,17 +11,33 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Loader2, Save } from "lucide-react";
+import { RefreshCw, Loader2, Save, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor } from "./tiptap-editor";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+
+interface Option {
+    id: string;
+    label: string;
+    type: 'select' | 'text' | 'textarea';
+    values?: string[];
+    defaultValue?: string;
+    allowCustom?: boolean;
+}
 
 interface GenerativeBlockProps {
   id: string;
   title: string;
   icon: ElementType;
-  generate: (userInput: string) => Promise<any>;
+  generate: (userInput: string, useCampaignContext: boolean, options: any) => Promise<any>;
   format: (response: any) => string;
   onGenerated: (id: string, title: string, content: string) => void;
+  options?: Option[];
 }
 
 export function GenerativeBlock({
@@ -31,17 +47,36 @@ export function GenerativeBlock({
   generate,
   format,
   onGenerated,
+  options: blockOptions = []
 }: GenerativeBlockProps) {
   const [modalContent, setModalContent] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [useCampaignContext, setUseCampaignContext] = useState(true);
   const { toast } = useToast();
+  
+  const [currentOptions, setCurrentOptions] = useState<Record<string, any>>(() => {
+    const initialOptions: Record<string, any> = {};
+    blockOptions.forEach(opt => {
+        initialOptions[opt.id] = opt.defaultValue || (opt.allowCustom ? 'Custom' : opt.values?.[0]);
+    });
+    return initialOptions;
+  });
+  const [customOptionValues, setCustomOptionValues] = useState<Record<string, string>>({});
+
 
   const handleGenerate = async () => {
     setIsLoading(true);
     try {
-      const result = await generate(userInput);
+        const finalOptions = {...currentOptions};
+        for (const key in finalOptions) {
+            if (finalOptions[key] === 'Custom') {
+                finalOptions[key] = customOptionValues[key] || '';
+            }
+        }
+      
+      const result = await generate(userInput, useCampaignContext, finalOptions);
       const formattedContent = format(result);
       setModalContent(formattedContent);
       if (!isModalOpen) {
@@ -62,25 +97,35 @@ export function GenerativeBlock({
   const handleSave = () => {
     onGenerated(id, title, modalContent);
     setIsModalOpen(false);
+    // Reset user input but keep options
     setUserInput("");
   };
+
+  const handleOptionChange = (optionId: string, value: string) => {
+    setCurrentOptions(prev => ({...prev, [optionId]: value }));
+  }
+  
+  const handleCustomOptionChange = (optionId: string, value: string) => {
+    setCustomOptionValues(prev => ({...prev, [optionId]: value }));
+  }
 
   return (
     <>
       <Card
-        className="flex flex-col justify-center cursor-pointer group hover:bg-accent/50 transition-colors duration-200"
+        className="flex flex-col justify-center cursor-pointer group hover:border-primary transition-colors duration-200"
         onClick={handleGenerate}
       >
         <CardContent className="p-4 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <Icon className="h-5 w-5 text-accent group-hover:text-accent-foreground transition-colors duration-200" />
-            <h3 className="font-headline text-base group-hover:text-accent-foreground transition-colors duration-200">
+          <div className="flex items-center gap-3 text-center">
+            <Icon className="h-5 w-5 text-accent transition-colors duration-200" />
+            <h3 className="font-headline text-base text-foreground transition-colors duration-200">
               {isLoading && !isModalOpen ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 title
               )}
             </h3>
+             <Sparkles className="h-5 w-5 text-accent/50 group-hover:text-primary transition-colors duration-200" />
           </div>
         </CardContent>
       </Card>
@@ -93,15 +138,63 @@ export function GenerativeBlock({
               {title}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <TiptapEditor
-              content={modalContent}
-              onChange={setModalContent}
-              isLoading={isLoading}
-            />
+          <div className="py-4 max-h-[60vh] overflow-y-auto pr-4">
+             <div className="space-y-4">
+                 {blockOptions.map(opt => (
+                    <div key={opt.id} className="space-y-2">
+                        <Label htmlFor={opt.id}>{opt.label}</Label>
+                        {opt.type === 'select' && (
+                            <Select onValueChange={(value) => handleOptionChange(opt.id, value)} defaultValue={currentOptions[opt.id]}>
+                                <SelectTrigger id={opt.id}>
+                                    <SelectValue placeholder={`Select ${opt.label}...`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {opt.values?.map(val => <SelectItem key={val} value={val}>{val}</SelectItem>)}
+                                    {opt.allowCustom && <SelectItem value="Custom">Custom...</SelectItem>}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        {opt.allowCustom && currentOptions[opt.id] === 'Custom' && (
+                            <Input 
+                                placeholder={`Enter custom ${opt.label.toLowerCase()}...`}
+                                value={customOptionValues[opt.id] || ''}
+                                onChange={(e) => handleCustomOptionChange(opt.id, e.target.value)}
+                            />
+                        )}
+                    </div>
+                ))}
+
+                <div className="space-y-2">
+                    <Label htmlFor="user-input">Specific Request (Optional)</Label>
+                    <Textarea 
+                        id="user-input"
+                        placeholder="Any additional details or context to guide the AI..."
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        className="min-h-[100px]"
+                    />
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Checkbox 
+                        id="use-campaign-context" 
+                        checked={useCampaignContext}
+                        onCheckedChange={(checked) => setUseCampaignContext(Boolean(checked))}
+                    />
+                    <Label htmlFor="use-campaign-context" className="text-sm font-normal">Use Campaign Context</Label>
+                </div>
+                
+                 <div className="border-t pt-4 mt-4">
+                     <TiptapEditor
+                        content={modalContent}
+                        onChange={setModalContent}
+                        isLoading={isLoading}
+                        placeholder={`Generated ${title} will appear here...`}
+                    />
+                 </div>
+            </div>
           </div>
-          <DialogFooter className="sm:justify-between">
-            <Button
+          <DialogFooter className="sm:justify-between items-center">
+             <Button
               variant="outline"
               onClick={handleGenerate}
               disabled={isLoading}

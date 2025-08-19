@@ -15,6 +15,7 @@ import {z} from 'genkit';
 
 const GeneratePuzzleInputSchema = z.object({
   campaignSetting: z.string().describe('The general setting of the campaign (e.g., ancient ruins, wizard\'s tower, fey forest) and any user-provided context.'),
+  complexity: z.enum(['Simple', 'Common', 'Challenging']).default('Common').describe('The complexity of the puzzle.'),
 });
 export type GeneratePuzzleInput = z.infer<typeof GeneratePuzzleInputSchema>;
 
@@ -34,8 +35,9 @@ const prompt = ai.definePrompt({
   name: 'generatePuzzlePrompt',
   input: {schema: GeneratePuzzleInputSchema},
   output: {schema: GeneratePuzzleOutputSchema},
-  prompt: `You are a brilliant puzzle master for tabletop RPGs. Create a clever fantasy puzzle appropriate for the given setting.
+  prompt: `You are a brilliant puzzle master for tabletop RPGs. Create a clever fantasy puzzle appropriate for the given setting and complexity.
 
+  Complexity: {{{complexity}}}
   Campaign Setting & Context: {{{campaignSetting}}}
 
   Generate a title, a one-paragraph description of the puzzle, a clear solution, and three cryptic clues. The puzzle should be solvable with logic and observation, not just a single skill check.

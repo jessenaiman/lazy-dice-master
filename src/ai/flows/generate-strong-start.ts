@@ -23,7 +23,7 @@ const GenerateStrongStartInputSchema = z.object({
 export type GenerateStrongStartInput = z.infer<typeof GenerateStrongStartInputSchema>;
 
 const GenerateStrongStartOutputSchema = z.object({
-  strongStart: z.string().describe('A compelling opening scene.'),
+  strongStart: z.array(z.string()).min(3).max(5).describe('An array of 3-5 compelling opening scene ideas as bullet points.'),
 });
 export type GenerateStrongStartOutput = z.infer<typeof GenerateStrongStartOutputSchema>;
 
@@ -36,12 +36,12 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateStrongStartInputSchema},
   output: {schema: GenerateStrongStartOutputSchema},
   prompt: `You are an experienced Game Master known for creating exciting opening scenes.
-  Based on the campaign setting and player characters provided, generate a "Strong Start" to hook the players.
+  Based on the campaign setting and player characters provided, generate 3 to 5 "Strong Start" bullet points to hook the players.
+  Each bullet point should be a concise, actionable, and exciting situation that immediately involves the characters. Vary the length and style of each point.
 
   Campaign Setting: {{{campaignSetting}}}
   Player Characters & Context: {{{playerCharacters}}}
-
-  Strong Start:`,
+  `,
 });
 
 const generateStrongStartFlow = ai.defineFlow({
