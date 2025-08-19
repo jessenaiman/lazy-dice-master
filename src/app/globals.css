@@ -73,6 +73,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  .prose ul > li::before {
+    content: '⚔️';
+    margin-right: 0.75em;
+    color: hsl(var(--accent));
+  }
 }
 
 @media print {

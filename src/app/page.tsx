@@ -2,6 +2,7 @@
 'use client';
 
 import {useState, useRef, useEffect} from 'react';
+import Link from 'next/link';
 import {Header} from '@/components/header';
 import {generateStrongStart} from '@/ai/flows/generate-strong-start';
 import {generateSecretsAndClues} from '@/ai/flows/generate-secrets-and-clues';
@@ -11,11 +12,15 @@ import {generateLocation} from '@/ai/flows/generate-location';
 import {generatePuzzle} from '@/ai/flows/generate-puzzle';
 import {generateMagicItem} from '@/ai/flows/generate-magic-item';
 import {generateProphecy} from '@/ai/flows/generate-prophecy';
-import {generateCampaignContext} from '@/ai/flows/generate-campaign-context';
 import {GenerativeBlock} from '@/components/generative-block';
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   KeyRound,
   Map,
@@ -29,105 +34,99 @@ import {
   BookOpen,
   Printer,
   Save,
-  Upload,
-  RefreshCw,
-  Loader2,
+  ChevronUp,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
 import TurndownService from 'turndown';
-import { mockCampaigns } from '@/lib/mock-data';
+import type { Campaign, SessionPrep } from '@/lib/types';
 
-interface GeneratedContent {
-  id: string;
-  title: string;
-  content: string;
-}
-
-const renderContentWithFantasyIcons = (content: string) => {
-  const processedContent = content
-    .replace(/<h3>/g, '<h3 class="font-headline text-xl mt-4 mb-2 text-primary">')
-    .replace(/<ul>/g, '<ul class="list-none p-0">')
-    .replace(
-      /<li>/g,
-      '<li class="flex items-start mb-2"><span class="mr-3 mt-1 text-accent shrink-0">⚔️</span><span>'
-    )
-    .replace(/<\/li>/g, '</span></li>');
-
-  return processedContent;
-};
+const CAMPAIGNS_STORAGE_KEY = 'lazy-gm-campaigns';
+const ACTIVE_CAMPAIGN_ID_KEY = 'lazy-gm-active-campaign-id';
 
 export default function CockpitPage() {
-  const campaign = mockCampaigns[0];
-  const [globalContext, setGlobalContext] = useState('');
-  const [isContextLoading, setIsContextLoading] = useState(true);
-
-  const [generatedContents, setGeneratedContents] = useState<
-    GeneratedContent[]
-  >([]);
-  const {toast} = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleGenerateContext = async () => {
-    setIsContextLoading(true);
-    try {
-      const result = await generateCampaignContext({});
-      const formattedContext = `<h2>${
-        result.name
-      }</h2><p>${result.description.replace(
-        /\n/g,
-        '</p><p>'
-      )}</p><h3>Characters:</h3><ul>${result.characters
-        .map(
-          (c: any) =>
-            `<li><strong>${c.name}:</strong> <em>${c.details}</em> - Motivation: ${c.motivation}</li>`
-        )
-        .join('')}</ul>`;
-      setGlobalContext(formattedContext);
-    } catch (error) {
-      console.error('Error generating context:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Generating Context',
-        description: 'Could not generate campaign context. Please try again.',
-      });
-    } finally {
-      setIsContextLoading(false);
-    }
-  };
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [sessionNotes, setSessionNotes] = useState<string>("");
+  const { toast } = useToast();
 
   useEffect(() => {
-    handleGenerateContext();
+    const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
+    const allCampaignsJSON = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
+
+    if (allCampaignsJSON) {
+      const allCampaigns: Campaign[] = JSON.parse(allCampaignsJSON);
+      if (activeId) {
+        const activeCampaign = allCampaigns.find(c => c.id === activeId);
+        setCampaign(activeCampaign || allCampaigns[0] || null);
+      } else if (allCampaigns.length > 0) {
+        setCampaign(allCampaigns[0]);
+        localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, allCampaigns[0].id);
+      }
+    }
   }, []);
 
+  const getCampaignContext = () => {
+    if (!campaign) return "No campaign loaded.";
+    const characterInfo = campaign.characters.map(c => `- ${c.name}: ${c.motivation}`).join('\n');
+    return `${campaign.description}\n\n**Characters**:\n${characterInfo}`;
+  };
+  
   const handleContentGenerated = (
-    id: string,
-    title: string,
+    _id: string,
+    _title: string,
     content: string
   ) => {
-    setGeneratedContents(prevContents => {
-      const existingIndex = prevContents.findIndex(item => item.id === id);
-      if (existingIndex > -1) {
-        const newContents = [...prevContents];
-        newContents[existingIndex] = {id, title, content};
-        return newContents;
-      }
-      return [...prevContents, {id, title, content}];
-    });
+    setSessionNotes(prev => `${prev}${content}`);
     toast({
-      title: `${title} Added`,
-      description: `The content has been added to your session notes.`,
+      title: 'Content Added',
+      description: `The new content has been added to your session notes.`,
     });
   };
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open('', '', 'height=800,width=1200');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>Session Notes</title>');
+      // A basic stylesheet for printing
+      printWindow.document.write(`
+        <style>
+          body { font-family: sans-serif; }
+          .prose { max-width: 100%; }
+          h1, h2, h3 { font-family: serif; }
+          ul { list-style: none; padding-left: 0; }
+          li { display: flex; align-items: start; margin-bottom: 0.5em; }
+          li::before { content: '⚔️'; margin-right: 0.75em; }
+        </style>
+      `);
+      printWindow.document.write('</head><body>');
+      const turndownService = new TurndownService();
+      const sessionMarkdown = turndownService.turndown(sessionNotes);
+      printWindow.document.write(`<div class="prose">${sessionMarkdown.replace(/\n/g, '<br>')}</div>`);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleSave = () => {
+    const turndownService = new TurndownService({ headingStyle: 'atx' });
+    
+    if (campaign) {
+      const campaignMarkdown = turndownService.turndown(getCampaignContext());
+      saveMarkdown(campaignMarkdown, `campaign-${campaign.name.replace(/\s/g, '_')}.md`);
+    }
+
+    const sessionMarkdown = turndownService.turndown(sessionNotes);
+    saveMarkdown(sessionMarkdown, `session-notes-${new Date().toISOString()}.md`);
+    
+    toast({
+      title: 'Content Saved',
+      description: 'Your campaign context and session notes have been downloaded as markdown files.',
+    });
   };
 
   const saveMarkdown = (content: string, filename: string) => {
-    const blob = new Blob([content], {
-      type: 'text/markdown;charset=utf-8',
-    });
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -138,46 +137,6 @@ export default function CockpitPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSave = () => {
-    const turndownService = new TurndownService({headingStyle: 'atx'});
-    
-    // Save Campaign Context
-    const campaignMarkdown = turndownService.turndown(globalContext);
-    saveMarkdown(campaignMarkdown, `campaign-context-${campaign.id}.md`);
-
-    // Save Session Notes
-    const sessionMarkdown = generatedContents
-      .map(
-        item =>
-          `## ${item.title}\n\n${turndownService.turndown(item.content)}`
-      )
-      .join('\n\n---\n\n');
-    saveMarkdown(sessionMarkdown, `session-notes-${new Date().toISOString()}.md`);
-    
-    toast({
-      title: 'Content Saved',
-      description: 'Your campaign context and session notes have been downloaded as markdown files.',
-    });
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const text = e.target?.result as string;
-        // For simplicity, appending to existing HTML. A more robust solution
-        // might convert markdown to HTML here.
-        setGlobalContext(prev => `${prev}<p>--- Uploaded Content ---</p><p>${text.replace(/\n/g, '<br />')}</p>`);
-        toast({
-          title: 'File Uploaded',
-          description: `Content from ${file.name} has been added to the context.`,
-        });
-      };
-      reader.readAsText(file);
-    }
-  };
-
   const toolkitBlocks = [
     {
       id: 'strong-start',
@@ -186,11 +145,11 @@ export default function CockpitPage() {
       generate: async (userInput: string) =>
         (
           await generateStrongStart({
-            campaignSetting: `${globalContext}\n\n${userInput}`,
-            playerCharacters: 'Players from context',
+            campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
+            playerCharacters: campaign?.characters.map(c => c.name).join(', ') || "",
           })
         ).strongStart,
-      format: (c: string) => `<p>${c}</p>`,
+      format: (c: string) => `<h2>Strong Start</h2><p>${c}</p>`,
     },
     {
       id: 'plot-hook',
@@ -198,11 +157,11 @@ export default function CockpitPage() {
       icon: Compass,
       generate: async (userInput: string) =>
         await generatePlotHook({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
-          playerCharacters: 'Players from context',
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
+          playerCharacters: campaign?.characters.map(c => c.name).join(', ') || "",
         }),
       format: (r: any) =>
-        `<h3>Hook</h3><p>${r.hook}</p><h3>Clues</h3><ul><li>${r.clues.join(
+        `<h2>Plot Hook</h2><h3>Hook</h3><p>${r.hook}</p><h3>Clues</h3><ul><li>${r.clues.join(
           '</li><li>'
         )}</li></ul>`,
     },
@@ -212,11 +171,11 @@ export default function CockpitPage() {
       icon: KeyRound,
       generate: async (userInput: string) =>
         await generateSecretsAndClues({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
           characterMotivations: 'Motivations from context',
           numSecrets: 5,
         }),
-      format: (r: any) => `<ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
+      format: (r: any) => `<h2>Secrets</h2><ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
     },
     {
       id: 'clues',
@@ -224,11 +183,11 @@ export default function CockpitPage() {
       icon: Eye,
       generate: async (userInput: string) =>
         await generateSecretsAndClues({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
           characterMotivations: 'Motivations from context',
           numSecrets: 5,
         }),
-      format: (r: any) => `<ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
+      format: (r: any) => `<h2>Clues</h2><ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
     },
     {
       id: 'npc',
@@ -236,10 +195,10 @@ export default function CockpitPage() {
       icon: User,
       generate: async (userInput: string) =>
         await generateNpc({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
         }),
       format: (r: any) =>
-        `<h3>${r.name}</h3><p><em>${r.description}</em></p><h3>Mannerisms:</h3><ul><li>${r.mannerisms.join(
+        `<h2>NPC: ${r.name}</h2><p><em>${r.description}</em></p><h3>Mannerisms:</h3><ul><li>${r.mannerisms.join(
           '</li><li>'
         )}</li></ul>`,
     },
@@ -249,10 +208,10 @@ export default function CockpitPage() {
       icon: Map,
       generate: async (userInput: string) =>
         await generateLocation({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
         }),
       format: (r: any) =>
-        `<h3>${r.name}</h3><p>${r.description}</p><h3>Clues:</h3><ul><li>${r.clues.join(
+        `<h2>Location: ${r.name}</h2><p>${r.description}</p><h3>Secrets & Clues:</h3><ul><li>${r.clues.join(
           '</li><li>'
         )}</li></ul>`,
     },
@@ -262,10 +221,10 @@ export default function CockpitPage() {
       icon: Puzzle,
       generate: async (userInput: string) =>
         await generatePuzzle({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
         }),
       format: (r: any) =>
-        `<h3>${r.title}</h3><p>${r.description}</p><h3>Solution:</h3><p>${r.solution}</p><h3>Clues:</h3><ul><li>${r.clues.join(
+        `<h2>Puzzle: ${r.title}</h2><p>${r.description}</p><h3>Solution:</h3><p>${r.solution}</p><h3>Clues:</h3><ul><li>${r.clues.join(
           '</li><li>'
         )}</li></ul>`,
     },
@@ -275,10 +234,10 @@ export default function CockpitPage() {
       icon: Gem,
       generate: async (userInput: string) =>
         await generateMagicItem({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
         }),
       format: (r: any) =>
-        `<h3>${r.name}</h3><p><em>${r.description}</em></p><h3>Powers:</h3><ul><li>${r.powers.join(
+        `<h2>Magic Item: ${r.name}</h2><p><em>${r.description}</em></p><h3>Powers:</h3><ul><li>${r.powers.join(
           '</li><li>'
         )}</li></ul>`,
     },
@@ -288,14 +247,29 @@ export default function CockpitPage() {
       icon: ScrollText,
       generate: async (userInput: string) =>
         await generateProphecy({
-          campaignSetting: `${globalContext}\n\n${userInput}`,
+          campaignSetting: `${getCampaignContext()}\n\n${userInput}`,
         }),
       format: (r: any) =>
-        `<h3>Prophecy</h3><p><em>${r.prophecy}</em></p><h3>Possible Meanings:</h3><ul><li>${r.meanings.join(
+        `<h2>Prophecy</h2><p><em>${r.prophecy}</em></p><h3>Possible Meanings:</h3><ul><li>${r.meanings.join(
           '</li><li>'
         )}</li></ul>`,
     },
   ];
+
+  if (!campaign) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+          <Header />
+          <main className="text-center">
+            <h1 className="font-headline text-2xl mb-2">No Active Campaign</h1>
+            <p className="text-muted-foreground mb-4">Please create or select an active campaign from the Campaigns page.</p>
+            <Button asChild>
+                <Link href="/campaigns">Go to Campaigns</Link>
+            </Button>
+          </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body transition-colors duration-300">
@@ -323,82 +297,53 @@ export default function CockpitPage() {
 
         {/* Right Column: Session Notes & Context */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-headline flex items-center justify-between">
-                <span>Campaign &amp; GM Context</span>
-                <div className="flex items-center gap-2">
-                   <Button variant="outline" size="icon" onClick={handleGenerateContext} disabled={isContextLoading}>
-                      {isContextLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      <span className="sr-only">Regenerate Context</span>
-                    </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload
-                  </Button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept=".md,.txt"
-                    className="hidden"
+          <Collapsible defaultOpen={true}>
+            <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-headline flex items-center justify-between">
+                      <span>Campaign: {campaign.name}</span>
+                       <Button variant="ghost" size="sm" className="data-[state=open]:rotate-180">
+                         <ChevronUp className="h-4 w-4" />
+                         <span className="sr-only">Toggle Context</span>
+                       </Button>
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <TiptapEditor
+                    content={getCampaignContext()}
+                    onChange={() => {}} // For now, this is read-only in the cockpit. Can be edited on campaign page.
+                    placeholder="Campaign context appears here."
+                    editable={false}
                   />
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-               <TiptapEditor
-                  content={globalContext}
-                  onChange={setGlobalContext}
-                  placeholder="Campaign context will be generated here. You can also edit it or upload your own notes."
-                  isLoading={isContextLoading}
-                />
-            </CardContent>
-          </Card>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           <div className="bg-card border rounded-lg shadow-sm h-full flex flex-col flex-grow">
-            <div className="p-6 flex items-center justify-between border-b">
-              <h2 className="font-headline text-3xl flex items-center gap-3">
+            <div className="p-4 flex items-center justify-between border-b">
+              <h2 className="font-headline text-2xl flex items-center gap-3">
                 <BookOpen /> Session Notes
               </h2>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleSave}>
-                  <Save className="mr-2" /> Save Session
+                  <Save className="mr-2 h-4 w-4" /> Save
                 </Button>
                 <Button variant="outline" size="sm" onClick={handlePrint}>
-                  <Printer className="mr-2" /> Print Session
+                  <Printer className="mr-2 h-4 w-4" /> Print
                 </Button>
               </div>
             </div>
-
-            <ScrollArea className="flex-grow">
-              <div className="p-8 prose prose-sm max-w-none prose-p:text-foreground/90 prose-h3:text-primary prose-strong:text-foreground prose-em:text-foreground/80 font-body">
-                {generatedContents.length > 0 ? (
-                  generatedContents.map(item => (
-                    <div key={item.id} className="mb-6">
-                      <h2 className="font-headline text-2xl mb-2">
-                        {item.title}
-                      </h2>
-                      <div
-                        className="text-base leading-relaxed"
-                        dangerouslySetInnerHTML={{
-                          __html: renderContentWithFantasyIcons(item.content),
-                        }}
-                      ></div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-muted-foreground pt-16">
-                    <p>Your generated content will appear here.</p>
-                    <p>Use the GM's Toolkit on the left to get started.</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+            <div className="flex-grow p-1">
+              <TiptapEditor
+                content={sessionNotes}
+                onChange={setSessionNotes}
+                placeholder="Your generated content will appear here. Use the GM's Toolkit on the left to get started."
+              />
+            </div>
           </div>
         </div>
       </main>

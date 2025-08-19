@@ -21,20 +21,15 @@ export interface PlayerCharacter {
   
   export interface SessionPrep {
     id: string;
-    campaignId: string;
-    strongStart: string;
-    potentialScenes: string[];
-    secrets: Secret[];
-    fantasticLocations: string[]; // For simplicity, just strings for now
-    importantNpcs: string[]; // For simplicity, just strings for now
-    relevantMonsters: string[]; // For simplicity, just strings for now
-    magicItems: MagicItem[];
+    // Removed campaignId as we will manage this link differently
+    date: string; // ISO string
+    notes: string; // All session notes as a single HTML string
   }
   
   export interface Campaign {
     id: string;
     name: string;
-    description: string;
+    description: string; // This will be the main context
     characters: PlayerCharacter[];
     sessionPreps: SessionPrep[];
   }
