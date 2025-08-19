@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Bold, Italic, Strikethrough, Code, Pilcrow, List, ListOrdered } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { useEffect } from 'react';
 
 interface TiptapEditorProps {
   content: string;
@@ -57,12 +58,13 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading }: Tipt
     },
     editable: !isLoading,
   });
+
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
   
-  // Update content when the prop changes, but only if it's different from the editor's current state
-  // This is important for AI-generated content updates
-  if (editor && content !== editor.getHTML()) {
-    editor.commands.setContent(content);
-  }
 
   if (isLoading) {
     return (
