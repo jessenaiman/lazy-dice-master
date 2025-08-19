@@ -74,11 +74,11 @@ export function GenerativeBlock({
         <CardContent className="p-4 flex items-center justify-center">
           <div className="flex items-center gap-3">
             <Icon className="h-5 w-5 text-accent group-hover:text-accent-foreground transition-colors duration-200" />
-            <h3 className="font-headline text-lg group-hover:text-accent-foreground transition-colors duration-200">
+            <h3 className="font-headline text-base group-hover:text-accent-foreground transition-colors duration-200">
               {isLoading && !isModalOpen ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                `Generate ${title}`
+                title
               )}
             </h3>
           </div>
@@ -94,7 +94,11 @@ export function GenerativeBlock({
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <TiptapEditor content={modalContent} onChange={setModalContent} />
+            <TiptapEditor
+              content={modalContent}
+              onChange={setModalContent}
+              isLoading={isLoading}
+            />
           </div>
           <DialogFooter className="sm:justify-between">
             <Button
@@ -115,7 +119,7 @@ export function GenerativeBlock({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button onClick={handleSave}><Save className="mr-2" />Add to Notes</Button>
+              <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" />Add to Notes</Button>
             </div>
           </DialogFooter>
         </DialogContent>
