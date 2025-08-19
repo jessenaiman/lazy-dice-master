@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Loader2, Sparkles, Save, Upload } from "lucide-react";
+import { RefreshCw, Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor } from "./tiptap-editor";
 
@@ -75,12 +75,11 @@ export function GenerativeBlock({
           <div className="flex items-center gap-3">
             <Icon className="h-5 w-5 text-accent group-hover:text-accent-foreground transition-colors duration-200" />
             <h3 className="font-headline text-lg group-hover:text-accent-foreground transition-colors duration-200">
-                {isLoading && !isModalOpen ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4 inline-block" />
-                )}
-              Generate {title}
+              {isLoading && !isModalOpen ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                `Generate ${title}`
+              )}
             </h3>
           </div>
         </CardContent>
@@ -91,7 +90,7 @@ export function GenerativeBlock({
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl flex items-center gap-2">
               <Icon className="h-6 w-6 text-accent" />
-              Generate {title}
+              {title}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">

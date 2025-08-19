@@ -13,7 +13,6 @@ import { generateMagicItem } from "@/ai/flows/generate-magic-item";
 import { generateProphecy } from "@/ai/flows/generate-prophecy";
 import { GenerativeBlock } from "@/components/generative-block";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +43,7 @@ const renderContentWithFantasyIcons = (content: string) => {
   const processedContent = content
     .replace(/<p><strong>(.*?)<\/strong><\/p>/g, '<h3>$1</h3>') 
     .replace(/<ul>/g, '<ul class="list-none p-0">')
-    .replace(/<li>/g, '<li class="flex items-start"><span class="mr-2 text-accent">⚔</span>');
+    .replace(/<li>/g, '<li class="flex items-start"><span class="mr-2 mt-1 text-accent shrink-0">⚔</span>');
 
   return processedContent;
 };
@@ -81,7 +80,7 @@ export default function CockpitPage() {
   };
 
   const handleSave = () => {
-    const markdownContent = generatedContents.map(item => `<h2>${item.title}</h2>\n\n${item.content.replace(/<br\s*\/?>/gi, '\n')}`).join('\n\n---\n\n');
+    const markdownContent = generatedContents.map(item => `## ${item.title}\n\n${item.content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p><p>/g, '\n\n').replace(/<p>|<\/p>/g, '').replace(/<ul>/g, '').replace(/<\/ul>/g, '').replace(/<li>/g, '* ').replace(/<\/li>/g, '\n')}`).join('\n\n---\n\n');
     const blob = new Blob([markdownContent], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
