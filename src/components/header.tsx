@@ -22,9 +22,9 @@ export function Header() {
           </li>
           <li>
             <Button variant="ghost" asChild>
-              <Link href="#">
+              <Link href="/library">
                 <Library className="mr-2 h-4 w-4" />
-                Library
+                Lore Library
               </Link>
             </Button>
           </li>

@@ -36,6 +36,7 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
 import TurndownService from 'turndown';
+import { mockCampaigns } from '@/lib/mock-data';
 
 interface GeneratedContent {
   id: string;
@@ -56,6 +57,7 @@ const renderContentWithFantasyIcons = (content: string) => {
 };
 
 export default function CockpitPage() {
+  const campaign = mockCampaigns[0];
   const [globalContext, setGlobalContext] = useState('');
   const [isContextLoading, setIsContextLoading] = useState(true);
 
@@ -121,28 +123,39 @@ export default function CockpitPage() {
     window.print();
   };
 
-  const handleSave = () => {
-    const turndownService = new TurndownService({headingStyle: 'atx'});
-    const markdownContent = generatedContents
-      .map(
-        item =>
-          `## ${item.title}\n\n${turndownService.turndown(item.content)}`
-      )
-      .join('\n\n---\n\n');
-    const blob = new Blob([markdownContent], {
+  const saveMarkdown = (content: string, filename: string) => {
+    const blob = new Blob([content], {
       type: 'text/markdown;charset=utf-8',
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `session-notes-${new Date().toISOString()}.md`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleSave = () => {
+    const turndownService = new TurndownService({headingStyle: 'atx'});
+    
+    // Save Campaign Context
+    const campaignMarkdown = turndownService.turndown(globalContext);
+    saveMarkdown(campaignMarkdown, `campaign-context-${campaign.id}.md`);
+
+    // Save Session Notes
+    const sessionMarkdown = generatedContents
+      .map(
+        item =>
+          `## ${item.title}\n\n${turndownService.turndown(item.content)}`
+      )
+      .join('\n\n---\n\n');
+    saveMarkdown(sessionMarkdown, `session-notes-${new Date().toISOString()}.md`);
+    
     toast({
-      title: 'Session Notes Saved',
-      description: 'Your session notes have been downloaded as a markdown file.',
+      title: 'Content Saved',
+      description: 'Your campaign context and session notes have been downloaded as markdown files.',
     });
   };
 
@@ -312,7 +325,7 @@ export default function CockpitPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-headline flex items-center justify-between">
-                <span>Campaign & Player Context</span>
+                <span>Campaign &amp; GM Context</span>
                 <div className="flex items-center gap-2">
                    <Button variant="outline" size="icon" onClick={handleGenerateContext} disabled={isContextLoading}>
                       {isContextLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
