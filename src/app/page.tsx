@@ -53,6 +53,7 @@ import {
   Book,
   Utensils,
   BookMarked,
+  Shield,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
@@ -60,6 +61,7 @@ import TurndownService from 'turndown';
 import type { Campaign, GeneratedItem } from '@/lib/types';
 import { addCampaign, getCampaigns, updateCampaign, uploadFile, addGeneratedItem } from '@/lib/firebase-service';
 import { useRouter } from 'next/navigation';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 export default function CockpitPage() {
@@ -86,10 +88,6 @@ export default function CockpitPage() {
         setActiveCampaign(foundCampaign || null);
       } else if (fetchedCampaigns.length > 0) {
         // Don't auto-select a campaign, let the user choose.
-        // setActiveCampaign(fetchedCampaigns[0]);
-        // if (fetchedCampaigns[0]?.id) {
-        //   localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
-        // }
       }
     };
     fetchCampaigns();
@@ -100,7 +98,6 @@ export default function CockpitPage() {
     if (campaign) {
       setActiveCampaign(campaign);
       localStorage.setItem('lazy-gm-active-campaign-id', campaignId);
-      // Reset session notes when switching campaigns
       setSessionNotes("");
       toast({title: `Campaign set to: ${campaign.name}`});
     }
@@ -166,11 +163,7 @@ export default function CockpitPage() {
     htmlContent: string,
     rawContent: any,
   ) => {
-    // Session notes are now handled on the prep page.
-    // setSessionNotes(prev => `${prev}${htmlContent}`);
-    
     try {
-      // Allow saving content without an active campaign
       const campaignId = activeCampaign ? activeCampaign.id : null;
       await addGeneratedItem(campaignId, type, rawContent);
        toast({
@@ -440,32 +433,51 @@ export default function CockpitPage() {
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between p-4">
                     <CardTitle className="text-base font-headline flex items-center gap-2">
-                      <Swords className="h-5 w-5 text-accent"/>
-                      <span>Campaign</span>
+                      <Shield className="h-5 w-5 text-accent"/>
+                      <span>{activeCampaign ? activeCampaign.name : "No Campaign Loaded"}</span>
                     </CardTitle>
                      <div className="flex items-center gap-2">
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
-                                    {activeCampaign ? activeCampaign.name.substring(0,15) + (activeCampaign.name.length > 15 ? '...' : '') : "Load..."}
-                                    <ChevronDown className="ml-2 h-4 w-4"/>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                {campaigns.map(c => (
-                                    <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
-                                        {c.name}
-                                    </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => router.push('/campaigns')}>
-                                    Manage Campaigns
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                         </DropdownMenu>
-                         <Button size="sm" onClick={() => router.push('/campaigns')}>
-                           <PlusCircle className="h-4 w-4" />
-                         </Button>
+                        <TooltipProvider>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
+                                      Load...
+                                      <ChevronDown className="ml-2 h-4 w-4"/>
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                  {campaigns.map(c => (
+                                      <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
+                                          {c.name}
+                                      </DropdownMenuItem>
+                                  ))}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => router.push('/campaigns')}>
+                                      Manage Campaigns
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                           <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" onClick={() => router.push('/campaigns')}>
+                                    <PlusCircle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>New/Manage Campaigns</p>
+                                </TooltipContent>
+                            </Tooltip>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" onClick={handleSaveActiveCampaign} disabled={!activeCampaign}>
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Save Campaign Changes</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                      </div>
                 </CardHeader>
             </Card>
@@ -491,26 +503,41 @@ export default function CockpitPage() {
           </ScrollArea>
         </div>
 
-        {/* Right Column: Is now just a placeholder or could be used for scratchpad */}
+        {/* Right Column */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-           <Card className="flex-grow">
+           {activeCampaign ? (
+               <Card className="flex-grow flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="font-headline text-2xl flex items-center gap-3">
+                            <BookOpen />
+                            {activeCampaign.name}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                       <TiptapEditor
+                            content={activeCampaign.description}
+                            onChange={handleCampaignDescriptionChange}
+                            placeholder="Describe your campaign..."
+                        />
+                    </CardContent>
+               </Card>
+           ) : (
+             <Card className="flex-grow">
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl flex items-center gap-3">
                         <BookOpen />
                         Welcome to the Cockpit
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="text-muted-foreground">
-                    <p>Select a tool from the GM's Toolkit on the left to start generating content for your game.</p>
-                    <p className="mt-4">Load a campaign to provide the AI with specific context, or generate content freely without one.</p>
-                    <p className="mt-4">All generated content is automatically saved to your <a href="/library" className="underline hover:text-primary">Lore Library</a>.</p>
-                    <p className="mt-4">Use the <a href="/campaigns" className="underline hover:text-primary">Campaigns</a> page to manage your campaigns and their session notes.</p>
+                <CardContent className="text-muted-foreground h-full flex flex-col items-center justify-center text-center">
+                    <p className="mb-4">Select a campaign from the dropdown above or create a new one to get started.</p>
+                    <p>Using a campaign provides the AI with context for better, more tailored content generation.</p>
+                    <Button className="mt-6" onClick={() => router.push('/campaigns')}>Manage Campaigns</Button>
                 </CardContent>
            </Card>
+           )}
         </div>
       </main>
     </div>
   );
 }
-
-    

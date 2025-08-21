@@ -50,15 +50,20 @@ export default function CampaignsPage() {
     const fetchCampaigns = async () => {
       setIsLoading(true);
       const savedCampaigns = await getCampaigns();
-      setCampaigns(savedCampaigns);
       
-      const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
-      if (activeId) {
-        const campaign = savedCampaigns.find(c => c.id === activeId);
-        if (campaign) {
-          setActiveCampaign(campaign);
-          const preps = await getSessionPrepsForCampaign(campaign.id);
-          setSessionPreps(preps);
+      if (savedCampaigns.length === 0) {
+        // If no campaigns exist, create one.
+        await handleNewCampaign(true);
+      } else {
+        setCampaigns(savedCampaigns);
+        const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
+        if (activeId) {
+          const campaign = savedCampaigns.find(c => c.id === activeId);
+          if (campaign) {
+            setActiveCampaign(campaign);
+            const preps = await getSessionPrepsForCampaign(campaign.id);
+            setSessionPreps(preps);
+          }
         }
       }
       setIsLoading(false);
@@ -94,7 +99,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const handleNewCampaign = async () => {
+  const handleNewCampaign = async (isInitial = false) => {
     setIsGenerating(true);
     try {
         const context = await generateCampaignContext({ campaignName: newCampaignName || undefined });
@@ -111,7 +116,11 @@ export default function CampaignsPage() {
         const newCampaign = { ...newCampaignData, id: newId };
         setCampaigns(prev => [...prev, newCampaign]);
         setNewCampaignName("");
-        selectActiveCampaign(newCampaign);
+        
+        if (isInitial || !activeCampaign) {
+          selectActiveCampaign(newCampaign);
+        }
+
         toast({ title: "New Campaign Created!", description: `"${finalName}" is ready.` });
     } catch (e) {
         console.error(e);
@@ -169,7 +178,7 @@ export default function CampaignsPage() {
                             onChange={(e) => setNewCampaignName(e.target.value)}
                             disabled={isGenerating}
                         />
-                         <Button onClick={handleNewCampaign} disabled={isGenerating}>
+                         <Button onClick={() => handleNewCampaign(false)} disabled={isGenerating}>
                             {isGenerating ? <Loader2 className="animate-spin"/> : <Bot />}
                         </Button>
                     </div>
@@ -209,7 +218,7 @@ export default function CampaignsPage() {
                 </Card>
             ))}
             </div>
-             {campaigns.length === 0 && (
+             {campaigns.length === 0 && !isLoading && (
                  <div className="text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                     <Shield className="mx-auto h-12 w-12 mb-4"/>
                     <p>No campaigns yet. Create one above to get started!</p>
@@ -287,5 +296,3 @@ export default function CampaignsPage() {
     </div>
   );
 }
-
-    
