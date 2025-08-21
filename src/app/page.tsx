@@ -3,7 +3,6 @@
 'use client';
 
 import {useState, useRef, useEffect, ChangeEvent} from 'react';
-import Link from 'next/link';
 import {Header} from '@/components/header';
 import {generateCampaignContext} from '@/ai/flows/generate-campaign-context';
 import {generateStrongStart} from '@/ai/flows/generate-strong-start';
@@ -208,8 +207,9 @@ export default function CockpitPage() {
           color: hsl(var(--accent));
         }
          .prose ul > li {
-          padding-left: 1.5em; 
+          padding-left: 0 !important;
           text-indent: -1.5em; 
+          margin-left: 1.5em;
         }
       </style>`);
       printWindow.document.write('</head><body class="bg-background text-foreground">');
@@ -436,7 +436,7 @@ export default function CockpitPage() {
                   format={block.format}
                   onGenerated={handleContentGenerated}
                   options={block.options}
-                  isActionable={!!activeCampaign}
+                  isActionable={true}
                 />
               ))}
             </div>

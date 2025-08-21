@@ -13,3 +13,4 @@ import '@/ai/flows/generate-prophecy.ts';
 import '@/ai/flows/generate-campaign-context.ts';
 import '@/ai/flows/generate-riddle.ts';
 import '@/ai/flows/generate-random-contents.ts';
+import '@/ai/flows/generate-map-image.ts';

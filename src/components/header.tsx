@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {BookDashed, Library, Swords, Shield} from 'lucide-react';
+import {BookDashed, Library, Swords, Shield, Map as MapIcon} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {ThemeToggle} from '@/components/theme-toggle';
 
@@ -25,6 +25,14 @@ export function Header() {
               <Link href="/library">
                 <Library className="mr-2 h-4 w-4" />
                 Lore Library
+              </Link>
+            </Button>
+          </li>
+           <li>
+            <Button variant="ghost" asChild>
+              <Link href="/maps">
+                <MapIcon className="mr-2 h-4 w-4" />
+                Map Maker
               </Link>
             </Button>
           </li>
