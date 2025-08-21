@@ -126,5 +126,3 @@ export const updateSessionPrep = async (id: string, prepData: Partial<SessionPre
 export const deleteSessionPrep = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'sessionPreps', id));
 };
-
-    

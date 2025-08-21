@@ -38,5 +38,3 @@ export interface SessionPrep {
   name: string;
   notes: string; // All session notes as a single HTML string
 }
-
-    
