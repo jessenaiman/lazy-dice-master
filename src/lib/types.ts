@@ -1,4 +1,5 @@
 
+
 export interface PlayerCharacter {
   id: string;
   name: string;
@@ -13,7 +14,7 @@ export interface StoredFile {
 }
 
 export interface Campaign {
-  id: string;
+  id:string;
   name: string;
   description: string;
   characters: PlayerCharacter[];
@@ -24,10 +25,10 @@ export interface Campaign {
 // Base type for all generated items
 export interface GeneratedItem {
   id: string;
-  campaignId: string;
+  campaignId: string | null; // Can be null if not associated with a specific campaign
   createdAt: number; // Storing as timestamp for Firestore
   content: any; // This will hold the specific data for each item type
-  type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook';
+  type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook' | 'map';
 }
 
 export interface SessionPrep {

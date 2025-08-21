@@ -1,7 +1,7 @@
 
 // src/lib/firebase-service.ts
 import { db, storage } from './firebase';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Campaign, GeneratedItem, StoredFile } from './types';
 
@@ -48,7 +48,7 @@ export const uploadFile = async (file: File, path: string): Promise<StoredFile> 
 }
 
 // GeneratedItem functions
-export const addGeneratedItem = async (campaignId: string, type: GeneratedItem['type'], content: any): Promise<string> => {
+export const addGeneratedItem = async (campaignId: string | null, type: GeneratedItem['type'], content: any): Promise<string> => {
     const itemsCol = collection(db, 'generatedItems');
     const docRef = await addDoc(itemsCol, {
         campaignId,
@@ -72,4 +72,15 @@ export const getGeneratedItemsForCampaign = async (campaignId: string): Promise<
         } as GeneratedItem
     });
     return itemList.sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const getGeneratedItemsByType = async (type: GeneratedItem['type']): Promise<GeneratedItem[]> => {
+    const itemsCol = collection(db, 'generatedItems');
+    const q = query(itemsCol, where('type', '==', type), orderBy('createdAt', 'desc'));
+    const itemSnapshot = await getDocs(q);
+    const itemList = itemSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as GeneratedItem));
+    return itemList;
 };
