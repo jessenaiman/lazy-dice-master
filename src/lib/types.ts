@@ -1,36 +1,38 @@
 export interface PlayerCharacter {
-    id: string;
-    name: string;
-    motivation: string;
-    details: string;
-  }
-  
-  export interface Secret {
-    id: string;
-    text: string;
-    revealed: boolean;
-    discoveryNotes?: string;
-  }
-  
-  export interface MagicItem {
-    id: string;
-    name: string;
-    description: string;
-    traits: string[];
-  }
-  
-  export interface SessionPrep {
-    id: string;
-    // Removed campaignId as we will manage this link differently
-    date: string; // ISO string
-    notes: string; // All session notes as a single HTML string
-  }
-  
-  export interface Campaign {
-    id: string;
-    name: string;
-    description: string; // This will be the main context
-    characters: PlayerCharacter[];
-    sessionPreps: SessionPrep[];
-  }
-  
+  id: string;
+  name: string;
+  motivation: string;
+  details: string;
+}
+
+export interface StoredFile {
+  name: string;
+  url: string;
+  path: string;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  characters: PlayerCharacter[];
+  sessionPrepIds: string[];
+  fileUrls: StoredFile[]; // To store links to files in Firebase Storage
+}
+
+// Base type for all generated items
+export interface GeneratedItem {
+  id: string;
+  campaignId: string;
+  createdAt: Date;
+  content: any; // This will hold the specific data for each item type
+  type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook';
+}
+
+export interface SessionPrep {
+  id: string;
+  campaignId: string;
+  date: string; // ISO string
+  notes: string; // All session notes as a single HTML string
+  generatedItemIds: string[];
+}

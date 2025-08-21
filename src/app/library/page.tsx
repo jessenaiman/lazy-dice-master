@@ -1,6 +1,10 @@
 // src/app/library/page.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Header } from "@/components/header";
-import { mockCampaigns } from "@/lib/mock-data";
+import { getCampaigns, getGeneratedItemsForCampaign } from "@/lib/firebase-service";
+import type { Campaign, GeneratedItem } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -10,10 +14,90 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Library } from "lucide-react";
+import { Library, BookOpen } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function LibraryPage() {
-  const campaign = mockCampaigns[0];
+  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
+  const [items, setItems] = useState<GeneratedItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLibraryData = async () => {
+      setIsLoading(true);
+      const campaigns = await getCampaigns();
+      const activeId = localStorage.getItem('lazy-gm-active-campaign-id');
+      
+      let currentCampaign = null;
+      if (activeId) {
+        currentCampaign = campaigns.find(c => c.id === activeId) || null;
+      } else if (campaigns.length > 0) {
+        currentCampaign = campaigns[0];
+      }
+      
+      setActiveCampaign(currentCampaign);
+
+      if (currentCampaign) {
+        const generatedItems = await getGeneratedItemsForCampaign(currentCampaign.id);
+        setItems(generatedItems);
+      }
+      setIsLoading(false);
+    };
+
+    fetchLibraryData();
+  }, []);
+
+  const filterItems = (type: GeneratedItem['type']) => {
+    return items.filter(item => item.type === type);
+  }
+
+  if (isLoading) {
+    return (
+        <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
+                <Library className="h-12 w-12 animate-spin text-muted-foreground" />
+            </main>
+        </div>
+    );
+  }
+
+  if (!activeCampaign) {
+      return (
+         <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex-1 p-4 md:p-8">
+                 <Card className="md:col-span-2 lg:col-span-3">
+                    <CardContent className="p-10 flex flex-col items-center justify-center text-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground mb-4"/>
+                        <h3 className="text-xl font-headline mb-2">No Campaign Loaded</h3>
+                        <p className="text-muted-foreground">Go to the Cockpit to create or load a campaign.</p>
+                    </CardContent>
+                 </Card>
+            </main>
+        </div>
+      )
+  }
+
+  const renderTable = (type: GeneratedItem['type'], columns: {key: string, label: string}[], data: any[]) => (
+     <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
+          <TableHead>Created</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((item) => (
+          <TableRow key={item.id}>
+            {columns.map(col => <TableCell key={col.key}>{ typeof item.content[col.key] === 'object' ? JSON.stringify(item.content[col.key]) : item.content[col.key]}</TableCell>)}
+            <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+          </TableRow>
+        ))}
+         {data.length === 0 && <TableRow><TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">No {type.replace('-', ' ')}s generated for this campaign yet.</TableCell></TableRow>}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -26,44 +110,49 @@ export default function LibraryPage() {
           </h1>
         </div>
         <p className="text-muted-foreground mb-6">
-            Campaign: {campaign.name}
+            Campaign: {activeCampaign.name}
         </p>
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Notes Archive</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session ID</TableHead>
-                  <TableHead>Strong Start</TableHead>
-                  <TableHead>Secrets & Clues</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campaign.sessionPreps.map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell className="font-medium">{session.id}</TableCell>
-                    <TableCell>{session.strongStart.substring(0, 100)}...</TableCell>
-                    <TableCell>{session.secrets.length} secrets</TableCell>
-                  </TableRow>
-                ))}
-                {/* Add more rows for a real implementation */}
-                 <TableRow>
-                    <TableCell className="font-medium text-muted-foreground">session-2 (example)</TableCell>
-                    <TableCell className="text-muted-foreground">A mysterious caravan arrives, offering exotic goods but hiding a dark secret...</TableCell>
-                    <TableCell className="text-muted-foreground">4 secrets</TableCell>
-                  </TableRow>
-                   <TableRow>
-                    <TableCell className="font-medium text-muted-foreground">session-3 (example)</TableCell>
-                    <TableCell className="text-muted-foreground">A child goes missing from the village, last seen near the old haunted mill...</TableCell>
-                    <TableCell className="text-muted-foreground">5 secrets</TableCell>
-                  </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        
+        <Tabs defaultValue="npcs" className="w-full">
+            <TabsList>
+                <TabsTrigger value="npcs">NPCs</TabsTrigger>
+                <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="puzzles">Puzzles</TabsTrigger>
+                <TabsTrigger value="magic-items">Magic Items</TabsTrigger>
+                <TabsTrigger value="secrets-clues">Secrets & Clues</TabsTrigger>
+            </TabsList>
+            <TabsContent value="npcs">
+                <Card>
+                    <CardHeader><CardTitle>NPCs</CardTitle></CardHeader>
+                    <CardContent>{renderTable('npc', [{key: 'name', label: 'Name'}, {key: 'description', label: 'Description'}], filterItems('npc'))}</CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="locations">
+                <Card>
+                    <CardHeader><CardTitle>Locations</CardTitle></CardHeader>
+                    <CardContent>{renderTable('location', [{key: 'name', label: 'Name'}, {key: 'description', label: 'Description'}], filterItems('location'))}</CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="puzzles">
+                <Card>
+                    <CardHeader><CardTitle>Puzzles</CardTitle></CardHeader>
+                    <CardContent>{renderTable('puzzle', [{key: 'title', label: 'Title'}, {key: 'complexity', label: 'Complexity'}], filterItems('puzzle'))}</CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="magic-items">
+                <Card>
+                    <CardHeader><CardTitle>Magic Items</CardTitle></CardHeader>
+                    <CardContent>{renderTable('magic-item', [{key: 'name', label: 'Name'}, {key: 'description', label: 'Description'}], filterItems('magic-item'))}</CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="secrets-clues">
+                <Card>
+                    <CardHeader><CardTitle>Secrets & Clues</CardTitle></CardHeader>
+                    <CardContent>{renderTable('secret-clue', [{key: 'secrets', label: 'Secrets'}], filterItems('secret-clue'))}</CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+
       </main>
     </div>
   );

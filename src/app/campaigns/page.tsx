@@ -29,26 +29,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { getCampaigns, deleteCampaign as deleteCampaignFromDb } from "@/lib/firebase-service";
 
-const CAMPAIGNS_STORAGE_KEY = 'lazy-gm-campaigns';
 const ACTIVE_CAMPAIGN_ID_KEY = 'lazy-gm-active-campaign-id';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedCampaigns = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
-    if (savedCampaigns) {
-      setCampaigns(JSON.parse(savedCampaigns));
+    const fetchCampaigns = async () => {
+      setIsLoading(true);
+      const savedCampaigns = await getCampaigns();
+      setCampaigns(savedCampaigns);
+      setIsLoading(false);
     }
+    fetchCampaigns();
   }, []);
-
-  const saveCampaigns = (updatedCampaigns: Campaign[]) => {
-    setCampaigns(updatedCampaigns);
-    localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(updatedCampaigns));
-  };
   
   const setActiveCampaign = (campaignId: string) => {
     localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, campaignId);
@@ -56,54 +55,35 @@ export default function CampaignsPage() {
     router.push('/');
   }
   
-  const deleteCampaign = (campaignId: string) => {
-    const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
-    saveCampaigns(updatedCampaigns);
-    
-    // If the deleted campaign was the active one, clear the active ID
-    const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
-    if (activeId === campaignId) {
-        localStorage.removeItem(ACTIVE_CAMPAIGN_ID_KEY);
-    }
-    
-    toast({ title: "Campaign Deleted" });
-  }
-
-  const handleExport = () => {
-    const dataStr = JSON.stringify(campaigns, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = 'lazy-gm-campaigns.json';
-    
-    let linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  }
-
-  const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string;
-        const importedCampaigns = JSON.parse(text);
-        // Basic validation
-        if (Array.isArray(importedCampaigns) && importedCampaigns.every(c => c.id && c.name && c.description)) {
-          saveCampaigns(importedCampaigns);
-          toast({ title: "Campaigns Imported Successfully" });
-        } else {
-          toast({ variant: "destructive", title: "Invalid File Format" });
-        }
-      } catch (error) {
-        console.error("Import error:", error);
-        toast({ variant: "destructive", title: "Failed to Import Campaigns" });
+  const deleteCampaign = async (campaignId: string) => {
+    try {
+      await deleteCampaignFromDb(campaignId);
+      const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
+      setCampaigns(updatedCampaigns);
+      
+      const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
+      if (activeId === campaignId) {
+          localStorage.removeItem(ACTIVE_CAMPAIGN_ID_KEY);
       }
-    };
-    reader.readAsText(file);
-  };
+      
+      toast({ title: "Campaign Deleted" });
+    } catch (error) {
+      console.error("Failed to delete campaign:", error);
+      toast({ variant: "destructive", title: "Error Deleting Campaign" });
+    }
+  }
+
+
+  if (isLoading) {
+      return (
+        <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+            </main>
+        </div>
+      )
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -115,16 +95,7 @@ export default function CampaignsPage() {
           </h1>
           <div className="flex gap-2">
              <Button onClick={() => router.push('/')}>
-                <PlusCircle className="mr-2 h-4 w-4" /> New Campaign
-            </Button>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Export All
-            </Button>
-            <Button variant="outline" asChild>
-                <label htmlFor="import-file">
-                    <Upload className="mr-2 h-4 w-4" /> Import All
-                    <input type="file" id="import-file" accept=".json" className="hidden" onChange={handleImport} />
-                </label>
+                <PlusCircle className="mr-2 h-4 w-4" /> Go to Cockpit to Create
             </Button>
           </div>
         </div>
@@ -146,7 +117,7 @@ export default function CampaignsPage() {
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete your campaign
-                            and all of its associated data.
+                            and all of its associated data from the database.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -191,7 +162,7 @@ export default function CampaignsPage() {
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center">
                     <BookOpen className="h-12 w-12 text-muted-foreground mb-4"/>
                     <h3 className="text-xl font-headline mb-2">No Campaigns Yet</h3>
-                    <p className="text-muted-foreground mb-4">Click "New Campaign" to start your first adventure.</p>
+                    <p className="text-muted-foreground mb-4">Go to the Cockpit and click "New" to start your first adventure.</p>
                      <Button onClick={() => router.push('/')}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Create Your First Campaign
                     </Button>

@@ -52,9 +52,7 @@ import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
 import TurndownService from 'turndown';
 import type { Campaign, SessionPrep } from '@/lib/types';
-
-const CAMPAIGNS_STORAGE_KEY = 'lazy-gm-campaigns';
-const ACTIVE_CAMPAIGN_ID_KEY = 'lazy-gm-active-campaign-id';
+import { addCampaign, getCampaigns, updateCampaign, uploadFile } from '@/lib/firebase-service';
 
 
 export default function CockpitPage() {
@@ -67,32 +65,29 @@ export default function CockpitPage() {
   
   const { toast } = useToast();
 
-  // Load campaigns from local storage on initial render
+  // Load campaigns from firebase on initial render
   useEffect(() => {
-    const savedCampaigns = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
-    const allCampaigns: Campaign[] = savedCampaigns ? JSON.parse(savedCampaigns) : [];
-    setCampaigns(allCampaigns);
-    
-    const activeId = localStorage.getItem(ACTIVE_CAMPAIGN_ID_KEY);
-    if (activeId) {
-      const foundCampaign = allCampaigns.find(c => c.id === activeId);
-      setActiveCampaign(foundCampaign || null);
-    } else if (allCampaigns.length > 0) {
-      setActiveCampaign(allCampaigns[0]);
-      localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, allCampaigns[0].id);
-    }
-  }, []);
+    const fetchCampaigns = async () => {
+      const fetchedCampaigns = await getCampaigns();
+      setCampaigns(fetchedCampaigns);
 
-  const saveCampaignsToStorage = (updatedCampaigns: Campaign[]) => {
-    setCampaigns(updatedCampaigns);
-    localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(updatedCampaigns));
-  }
+      const activeId = localStorage.getItem('lazy-gm-active-campaign-id');
+      if (activeId) {
+        const foundCampaign = fetchedCampaigns.find(c => c.id === activeId);
+        setActiveCampaign(foundCampaign || null);
+      } else if (fetchedCampaigns.length > 0) {
+        setActiveCampaign(fetchedCampaigns[0]);
+        localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   const handleSetActiveCampaign = (campaignId: string) => {
     const campaign = campaigns.find(c => c.id === campaignId);
     if (campaign) {
       setActiveCampaign(campaign);
-      localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, campaignId);
+      localStorage.setItem('lazy-gm-active-campaign-id', campaignId);
       // Reset session notes when switching campaigns
       setSessionNotes("");
     }
@@ -102,21 +97,28 @@ export default function CockpitPage() {
     setIsGeneratingCampaign(true);
     try {
         const context = await generateCampaignContext({ theme: 'fantasy' });
-        const finalName = newCampaignName.trim() || context.name;
+        let finalName = newCampaignName.trim();
+        if (!finalName) {
+            finalName = context.name;
+        }
         
-        const newCampaign: Campaign = {
-            id: crypto.randomUUID(),
+        const newCampaign: Omit<Campaign, 'id'> = {
             name: finalName,
             description: context.description,
             characters: context.characters.map(c => ({...c, id: crypto.randomUUID()})),
-            sessionPreps: [],
+            sessionPrepIds: [],
+            fileUrls: [],
         };
-        const updatedCampaigns = [...campaigns, newCampaign];
-        saveCampaignsToStorage(updatedCampaigns);
-        setActiveCampaign(newCampaign);
-        localStorage.setItem(ACTIVE_CAMPAIGN_ID_KEY, newCampaign.id);
+
+        const newId = await addCampaign(newCampaign);
+        const fullCampaign = { ...newCampaign, id: newId };
+
+        const updatedCampaigns = [...campaigns, fullCampaign];
+        setCampaigns(updatedCampaigns);
+        setActiveCampaign(fullCampaign);
+        localStorage.setItem('lazy-gm-active-campaign-id', newId);
         setNewCampaignName("");
-        toast({ title: "Campaign Created!", description: `${newCampaign.name} is ready.` });
+        toast({ title: "Campaign Created!", description: `${fullCampaign.name} is ready.` });
     } catch (error) {
         console.error(error);
         toast({ variant: "destructive", title: "Failed to generate campaign context." });
@@ -125,11 +127,15 @@ export default function CockpitPage() {
     }
   };
 
-  const handleSaveActiveCampaign = () => {
+  const handleSaveActiveCampaign = async () => {
     if (!activeCampaign) return;
-    const updatedCampaigns = campaigns.map(c => c.id === activeCampaign.id ? activeCampaign : c);
-    saveCampaignsToStorage(updatedCampaigns);
-    toast({ title: "Campaign Saved!", description: `${activeCampaign.name} has been updated.`});
+    try {
+      await updateCampaign(activeCampaign.id, activeCampaign);
+      toast({ title: "Campaign Saved!", description: `${activeCampaign.name} has been updated.`});
+    } catch (error) {
+      console.error("Failed to save campaign:", error);
+      toast({ variant: "destructive", title: "Error Saving Campaign" });
+    }
   };
 
   const handleCampaignDescriptionChange = (newDescription: string) => {
@@ -220,21 +226,30 @@ export default function CockpitPage() {
     });
   };
 
-  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !activeCampaign) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      handleCampaignDescriptionChange(activeCampaign.description + '\n\n' + text);
-      toast({title: "File Content Added", description: `Content from ${file.name} has been added to the campaign context.`});
-    };
-    
-    if (file.type === 'text/plain' || file.type === 'text/markdown') {
-        reader.readAsText(file);
-    } else {
-        toast({variant: 'destructive', title: "Unsupported File Type", description: "Please upload a .txt or .md file."})
+    if (!['text/plain', 'text/markdown'].includes(file.type)) {
+       toast({variant: 'destructive', title: "Unsupported File Type", description: "Please upload a .txt or .md file."})
+       return;
+    }
+
+    try {
+        const { url, path } = await uploadFile(file, `campaigns/${activeCampaign.id}/${file.name}`);
+        const newFile = { name: file.name, url, path };
+        const updatedCampaign = {
+            ...activeCampaign,
+            fileUrls: [...activeCampaign.fileUrls, newFile]
+        };
+
+        await updateCampaign(activeCampaign.id, updatedCampaign);
+        setActiveCampaign(updatedCampaign);
+
+        toast({title: "File Uploaded", description: `${file.name} has been added to the campaign.`});
+    } catch (error) {
+        console.error("File upload failed:", error);
+        toast({variant: 'destructive', title: "Upload Failed", description: "Could not upload the file."});
     }
   };
   
