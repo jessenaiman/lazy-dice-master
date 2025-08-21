@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Footer } from '@/components/footer';
 
 export default function LibraryPage() {
   const [allItems, setAllItems] = useState<GeneratedItem[]>([]);
@@ -95,6 +96,7 @@ export default function LibraryPage() {
             <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
             </main>
+            <Footer />
         </div>
     );
   }
@@ -155,6 +157,7 @@ export default function LibraryPage() {
         </Tabs>
 
       </main>
+      <Footer />
     </div>
   );
 }

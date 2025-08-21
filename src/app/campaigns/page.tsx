@@ -33,6 +33,7 @@ import {
 import { getCampaigns, deleteCampaign as deleteCampaignFromDb, addCampaign, getSessionPrepsForCampaign, addSessionPrep, deleteSessionPrep } from "@/lib/firebase-service";
 import { generateCampaignContext } from "@/ai/flows/generate-campaign-context";
 import { TiptapEditor } from "@/components/tiptap-editor";
+import { Footer } from "@/components/footer";
 
 const ACTIVE_CAMPAIGN_ID_KEY = 'lazy-gm-active-campaign-id';
 
@@ -156,6 +157,7 @@ export default function CampaignsPage() {
             <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
             </main>
+            <Footer />
         </div>
       )
   }
@@ -293,6 +295,7 @@ export default function CampaignsPage() {
             )}
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

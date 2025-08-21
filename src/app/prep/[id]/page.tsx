@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, ArrowLeft, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import TurndownService from 'turndown';
+import { Footer } from '@/components/footer';
 
 
 export default function PrepPage() {
@@ -61,43 +62,7 @@ export default function PrepPage() {
     };
 
     const handlePrint = () => {
-        if (!prep) return;
-        const printWindow = window.open('', '', 'height=800,width=1200');
-        if (printWindow) {
-            printWindow.document.write('<html><head><title>Session Notes</title>');
-            const styles = Array.from(document.styleSheets)
-            .map(s => s.href ? `<link rel="stylesheet" href="${s.href}">` : '')
-            .join('\n');
-            printWindow.document.write(styles);
-            printWindow.document.write(`<style>
-            @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Open+Sans:wght@400;600&display=swap');
-            body { 
-                font-family: 'Open Sans', sans-serif;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            .prose h1, .prose h2, .prose h3 { font-family: 'Cinzel', serif; }
-            .prose ul > li::before { 
-            content: '⚔️'; 
-            margin-right: 0.75em; 
-            color: hsl(var(--accent));
-            }
-            .prose ul > li {
-            padding-left: 0 !important;
-            text-indent: -1.5em; 
-            margin-left: 1.5em;
-            }
-        </style>`);
-        printWindow.document.write('</head><body class="bg-background text-foreground">');
-        const contentDiv = document.createElement('div');
-        contentDiv.innerHTML = prep.notes;
-        contentDiv.className = 'prose dark:prose-invert max-w-none p-8';
-        printWindow.document.body.appendChild(contentDiv);
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500);
-        }
+        window.print();
     };
 
     const saveMarkdown = () => {
@@ -128,7 +93,7 @@ export default function PrepPage() {
         <div className="flex min-h-screen w-full flex-col">
             <Header />
             <main className="flex-1 p-4 md:p-8">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-6 no-print">
                     <Button variant="outline" onClick={() => router.push('/campaigns')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Campaigns
@@ -158,6 +123,7 @@ export default function PrepPage() {
                     </CardContent>
                 </Card>
             </main>
+            <Footer />
         </div>
     );
 

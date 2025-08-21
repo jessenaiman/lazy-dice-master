@@ -1,12 +1,12 @@
 
 import Link from 'next/link';
-import {BookDashed, Library, Swords, Shield, Map as MapIcon} from 'lucide-react';
+import {BookDashed, Library, Swords, Shield, Map as MapIcon, BookOpen} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {ThemeToggle} from '@/components/theme-toggle';
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6 no-print">
       <Link href="/" className="flex items-center gap-2">
         <BookDashed className="h-6 w-6 text-primary" />
         <span className="font-headline text-xl font-bold">Lazy GM Toolkit</span>
@@ -46,6 +46,14 @@ export function Header() {
             </Button>
           </li>
           <li>
+            <Button variant="ghost" asChild>
+              <Link href="/resources">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Resources
+              </Link>
+            </Button>
+          </li>
+          <li>
             <ThemeToggle />
           </li>
         </ul>
@@ -53,5 +61,3 @@ export function Header() {
     </header>
   );
 }
-
-    

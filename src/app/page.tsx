@@ -62,6 +62,7 @@ import type { Campaign, GeneratedItem } from '@/lib/types';
 import { addCampaign, getCampaigns, updateCampaign, uploadFile, addGeneratedItem } from '@/lib/firebase-service';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Footer } from '@/components/footer';
 
 
 export default function CockpitPage() {
@@ -401,6 +402,7 @@ export default function CockpitPage() {
           ))}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

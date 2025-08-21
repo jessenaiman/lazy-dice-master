@@ -31,10 +31,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Download, MapIcon, Save, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Sparkles, Download, Map as MapIcon, Save, Image as ImageIcon } from 'lucide-react';
 import { generateMapImage } from '@/ai/flows/generate-map-image';
 import { addGeneratedItem, getGeneratedItemsByType } from '@/lib/firebase-service';
 import type { GeneratedItem } from '@/lib/types';
+import { Footer } from '@/components/footer';
 
 
 type MapType = 'World' | 'City' | 'Treasure' | 'Battle';
@@ -261,6 +262,7 @@ export default function MapMakerPage() {
 
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
