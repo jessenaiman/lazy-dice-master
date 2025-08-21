@@ -1,3 +1,4 @@
+
 // src/components/generative-block.tsx
 "use client";
 
@@ -32,12 +33,12 @@ interface Option {
 }
 
 interface GenerativeBlockProps {
-  id: string;
+  id: GeneratedItem['type'];
   title: string;
   icon: ElementType;
   generate: (userInput: string, useCampaignContext: boolean, options: any) => Promise<any>;
   format: (response: any) => string;
-  onGenerated: (id: string, title: string, content: string) => void;
+  onGenerated: (id: GeneratedItem['type'], title: string, htmlContent: string, rawContent: any) => void;
   options?: Option[];
   isActionable?: boolean;
 }
@@ -53,6 +54,7 @@ export function GenerativeBlock({
   isActionable = false,
 }: GenerativeBlockProps) {
   const [modalContent, setModalContent] = useState("");
+  const [rawContent, setRawContent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userInput, setUserInput] = useState("");
@@ -71,6 +73,8 @@ export function GenerativeBlock({
 
   const handleGenerate = async () => {
     setIsLoading(true);
+    setModalContent("");
+    setRawContent(null);
     try {
         const finalOptions = {...currentOptions};
         for (const key in finalOptions) {
@@ -81,6 +85,7 @@ export function GenerativeBlock({
       
       const result = await generate(userInput, useCampaignContext, finalOptions);
       const formattedContent = format(result);
+      setRawContent(result);
       setModalContent(formattedContent);
       if (!isModalOpen) {
         setIsModalOpen(true);
@@ -98,10 +103,18 @@ export function GenerativeBlock({
   };
 
   const handleSave = () => {
-    onGenerated(id, title, modalContent);
-    setIsModalOpen(false);
-    // Reset user input but keep options
-    setUserInput("");
+    if (rawContent) {
+      onGenerated(id, title, modalContent, rawContent);
+      setIsModalOpen(false);
+      // Reset user input but keep options
+      setUserInput("");
+    } else {
+        toast({
+            variant: "destructive",
+            title: "No Content to Save",
+            description: "Please generate content before saving.",
+        });
+    }
   };
 
   const handleOptionChange = (optionId: string, value: string) => {
@@ -216,7 +229,7 @@ export function GenerativeBlock({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" />Add to Notes</Button>
+              <Button onClick={handleSave} disabled={isLoading || !rawContent}><Save className="mr-2 h-4 w-4" />Add to Notes & Save</Button>
             </div>
           </DialogFooter>
         </DialogContent>

@@ -1,3 +1,4 @@
+
 // src/app/library/page.tsx
 'use client';
 
@@ -14,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Library, BookOpen } from "lucide-react";
+import { Library, BookOpen, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function LibraryPage() {
@@ -33,6 +34,9 @@ export default function LibraryPage() {
         currentCampaign = campaigns.find(c => c.id === activeId) || null;
       } else if (campaigns.length > 0) {
         currentCampaign = campaigns[0];
+        if (currentCampaign.id) {
+          localStorage.setItem('lazy-gm-active-campaign-id', currentCampaign.id);
+        }
       }
       
       setActiveCampaign(currentCampaign);
@@ -51,34 +55,6 @@ export default function LibraryPage() {
     return items.filter(item => item.type === type);
   }
 
-  if (isLoading) {
-    return (
-        <div className="flex min-h-screen w-full flex-col">
-            <Header />
-            <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
-                <Library className="h-12 w-12 animate-spin text-muted-foreground" />
-            </main>
-        </div>
-    );
-  }
-
-  if (!activeCampaign) {
-      return (
-         <div className="flex min-h-screen w-full flex-col">
-            <Header />
-            <main className="flex-1 p-4 md:p-8">
-                 <Card className="md:col-span-2 lg:col-span-3">
-                    <CardContent className="p-10 flex flex-col items-center justify-center text-center">
-                        <BookOpen className="h-12 w-12 text-muted-foreground mb-4"/>
-                        <h3 className="text-xl font-headline mb-2">No Campaign Loaded</h3>
-                        <p className="text-muted-foreground">Go to the Cockpit to create or load a campaign.</p>
-                    </CardContent>
-                 </Card>
-            </main>
-        </div>
-      )
-  }
-
   const renderTable = (type: GeneratedItem['type'], columns: {key: string, label: string}[], data: any[]) => (
      <Table>
       <TableHeader>
@@ -94,10 +70,36 @@ export default function LibraryPage() {
             <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
           </TableRow>
         ))}
-         {data.length === 0 && <TableRow><TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">No {type.replace('-', ' ')}s generated for this campaign yet.</TableCell></TableRow>}
+         {data.length === 0 && <TableRow><TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">No {type.replace(/-/g, ' ')}s generated for this campaign yet.</TableCell></TableRow>}
       </TableBody>
     </Table>
   );
+
+  if (isLoading) {
+    return (
+        <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+            </main>
+        </div>
+    );
+  }
+
+  if (!activeCampaign) {
+      return (
+         <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mb-4"/>
+                <h3 className="text-xl font-headline mb-2">No Campaign Loaded</h3>
+                <p className="text-muted-foreground">Go to the Cockpit to create or load a campaign.</p>
+            </main>
+        </div>
+      )
+  }
+  
+  const secretsAndClues = items.filter(item => item.type === 'secret-clue').flatMap(item => item.content.secrets.map((secret: string) => ({...item, content: { secrets: secret}})));
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -148,7 +150,7 @@ export default function LibraryPage() {
             <TabsContent value="secrets-clues">
                 <Card>
                     <CardHeader><CardTitle>Secrets & Clues</CardTitle></CardHeader>
-                    <CardContent>{renderTable('secret-clue', [{key: 'secrets', label: 'Secrets'}], filterItems('secret-clue'))}</CardContent>
+                    <CardContent>{renderTable('secret-clue', [{key: 'secrets', label: 'Secret/Clue'}], secretsAndClues)}</CardContent>
                 </Card>
             </TabsContent>
         </Tabs>

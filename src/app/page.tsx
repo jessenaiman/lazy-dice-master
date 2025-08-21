@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 'use client';
 
@@ -51,8 +52,8 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
 import TurndownService from 'turndown';
-import type { Campaign, SessionPrep } from '@/lib/types';
-import { addCampaign, getCampaigns, updateCampaign, uploadFile } from '@/lib/firebase-service';
+import type { Campaign, GeneratedItem } from '@/lib/types';
+import { addCampaign, getCampaigns, updateCampaign, uploadFile, addGeneratedItem } from '@/lib/firebase-service';
 
 
 export default function CockpitPage() {
@@ -77,7 +78,9 @@ export default function CockpitPage() {
         setActiveCampaign(foundCampaign || null);
       } else if (fetchedCampaigns.length > 0) {
         setActiveCampaign(fetchedCampaigns[0]);
-        localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
+        if (fetchedCampaigns[0]?.id) {
+          localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
+        }
       }
     };
     fetchCampaigns();
@@ -150,16 +153,37 @@ export default function CockpitPage() {
     return `${activeCampaign.description}\n\n**Characters**:\n${characterInfo}`;
   };
   
-  const handleContentGenerated = (
-    _id: string,
-    _title: string,
-    content: string
+  const handleContentGenerated = async (
+    type: GeneratedItem['type'],
+    title: string,
+    htmlContent: string,
+    rawContent: any,
   ) => {
-    setSessionNotes(prev => `${prev}${content}`);
-    toast({
-      title: 'Content Added',
-      description: `The new content has been added to your session notes.`,
-    });
+    if (!activeCampaign) {
+       toast({
+        variant: "destructive",
+        title: 'No Active Campaign',
+        description: `Please create or load a campaign before generating content.`,
+      });
+      return;
+    }
+
+    setSessionNotes(prev => `${prev}${htmlContent}`);
+    
+    try {
+      await addGeneratedItem(activeCampaign.id, type, rawContent);
+       toast({
+        title: 'Content Added & Saved',
+        description: `New ${title} has been added to your session notes and saved to the Lore Library.`,
+      });
+    } catch (error) {
+        console.error("Failed to save generated item:", error);
+        toast({
+            variant: "destructive",
+            title: 'Failed to Save Content',
+            description: `The content was added to session notes but could not be saved to the database.`,
+        });
+    }
   };
 
   const handlePrint = () => {
@@ -178,7 +202,6 @@ export default function CockpitPage() {
             print-color-adjust: exact; 
         }
         .prose h1, .prose h2, .prose h3 { font-family: 'Cinzel', serif; }
-        .prose ul { list-style: none; padding-left: 0; }
         .prose ul > li::before { 
           content: '⚔️'; 
           margin-right: 0.75em; 
@@ -240,7 +263,7 @@ export default function CockpitPage() {
         const newFile = { name: file.name, url, path };
         const updatedCampaign = {
             ...activeCampaign,
-            fileUrls: [...activeCampaign.fileUrls, newFile]
+            fileUrls: [...(activeCampaign.fileUrls || []), newFile]
         };
 
         await updateCampaign(activeCampaign.id, updatedCampaign);
@@ -255,7 +278,7 @@ export default function CockpitPage() {
   
   const toolkitBlocks = [
     {
-      id: 'strong-start',
+      id: 'strong-start' as const,
       title: 'Strong Start',
       icon: Swords,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -264,11 +287,11 @@ export default function CockpitPage() {
             campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
             playerCharacters: activeCampaign?.characters.map(c => c.name).join(', ') || "",
           })
-        ).strongStart,
-      format: (c: any) => `<h2>Strong Start</h2><ul><li>${c.join('</li><li>')}</li></ul>`,
+        ),
+      format: (c: any) => `<h2>Strong Start</h2><ul><li>${c.strongStart.join('</li><li>')}</li></ul>`,
     },
     {
-      id: 'plot-hook',
+      id: 'plot-hook' as const,
       title: 'Plot Hook',
       icon: Compass,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -282,27 +305,17 @@ export default function CockpitPage() {
         )}</li></ul>`,
     },
     {
-      id: 'secrets',
-      title: 'Secrets',
+      id: 'secret-clue' as const,
+      title: 'Secrets & Clues',
       icon: KeyRound,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateSecretsAndClues({
           campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
         }),
-      format: (r: any) => `<h2>Secrets</h2><ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
+      format: (r: any) => `<h2>Secrets & Clues</h2><ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
     },
     {
-      id: 'clues',
-      title: 'Clues',
-      icon: Eye,
-      generate: async (userInput: string, useCampaignContext: boolean) =>
-        await generateSecretsAndClues({
-          campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
-        }),
-      format: (r: any) => `<h2>Clues</h2><ul><li>${r.secrets.join('</li><li>')}</li></ul>`,
-    },
-    {
-      id: 'npc',
+      id: 'npc' as const,
       title: 'NPC',
       icon: User,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -315,7 +328,7 @@ export default function CockpitPage() {
         )}</li></ul>`,
     },
     {
-      id: 'location',
+      id: 'location' as const,
       title: 'Location',
       icon: Map,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -328,7 +341,7 @@ export default function CockpitPage() {
         )}</li></ul>`,
     },
     {
-      id: 'puzzle',
+      id: 'puzzle' as const,
       title: 'Puzzle',
       icon: Puzzle,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>
@@ -345,7 +358,7 @@ export default function CockpitPage() {
       ]
     },
     {
-      id: 'riddle',
+      id: 'riddle' as const,
       title: 'Riddle',
       icon: BrainCircuit,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>
@@ -362,7 +375,7 @@ export default function CockpitPage() {
       ]
     },
     {
-      id: 'magic-item',
+      id: 'magic-item' as const,
       title: 'Magic Item',
       icon: Gem,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -375,7 +388,7 @@ export default function CockpitPage() {
         )}</li></ul>`,
     },
     {
-      id: 'prophecy',
+      id: 'prophecy' as const,
       title: 'Prophecy',
       icon: ScrollText,
       generate: async (userInput: string, useCampaignContext: boolean) =>
@@ -388,7 +401,7 @@ export default function CockpitPage() {
         )}</li></ul>`,
     },
     {
-      id: 'random-contents',
+      id: 'random-contents' as const,
       title: 'Random Contents',
       icon: Box,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>

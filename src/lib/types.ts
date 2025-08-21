@@ -1,3 +1,4 @@
+
 export interface PlayerCharacter {
   id: string;
   name: string;
@@ -24,7 +25,7 @@ export interface Campaign {
 export interface GeneratedItem {
   id: string;
   campaignId: string;
-  createdAt: Date;
+  createdAt: number; // Storing as timestamp for Firestore
   content: any; // This will hold the specific data for each item type
   type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook';
 }

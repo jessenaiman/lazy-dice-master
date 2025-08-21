@@ -1,3 +1,4 @@
+
 // src/lib/firebase-service.ts
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
@@ -47,14 +48,17 @@ export const uploadFile = async (file: File, path: string): Promise<StoredFile> 
 }
 
 // GeneratedItem functions
-export const addGeneratedItem = async (item: Omit<GeneratedItem, 'id' | 'createdAt'>): Promise<string> => {
+export const addGeneratedItem = async (campaignId: string, type: GeneratedItem['type'], content: any): Promise<string> => {
     const itemsCol = collection(db, 'generatedItems');
     const docRef = await addDoc(itemsCol, {
-        ...item,
-        createdAt: new Date(),
+        campaignId,
+        type,
+        content,
+        createdAt: Date.now(),
     });
     return docRef.id;
 };
+
 
 export const getGeneratedItemsForCampaign = async (campaignId: string): Promise<GeneratedItem[]> => {
     const itemsCol = collection(db, 'generatedItems');
@@ -65,9 +69,7 @@ export const getGeneratedItemsForCampaign = async (campaignId: string): Promise<
         return { 
             id: doc.id, 
             ...data,
-            // Convert Firestore Timestamp to JS Date
-            createdAt: data.createdAt.toDate(),
         } as GeneratedItem
     });
-    return itemList;
+    return itemList.sort((a, b) => b.createdAt - a.createdAt);
 };
