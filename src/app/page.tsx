@@ -15,6 +15,9 @@ import {generateMagicItem} from '@/ai/flows/generate-magic-item';
 import {generateProphecy} from '@/ai/flows/generate-prophecy';
 import {generateRiddle} from '@/ai/flows/generate-riddle';
 import {generateRandomContents} from '@/ai/flows/generate-random-contents';
+import { generateAdventureIdea } from '@/ai/flows/generate-adventure-idea';
+import { generateBookshelfContents, generateBookPassage } from '@/ai/flows/generate-bookshelf-contents';
+import { generateTavernMenu } from '@/ai/flows/generate-tavern-menu';
 
 import {GenerativeBlock} from '@/components/generative-block';
 import {Button} from '@/components/ui/button';
@@ -47,12 +50,16 @@ import {
   PlusCircle,
   Loader2,
   Upload,
+  Book,
+  Utensils,
+  BookMarked,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {TiptapEditor} from '@/components/tiptap-editor';
 import TurndownService from 'turndown';
 import type { Campaign, GeneratedItem } from '@/lib/types';
 import { addCampaign, getCampaigns, updateCampaign, uploadFile, addGeneratedItem } from '@/lib/firebase-service';
+import { useRouter } from 'next/navigation';
 
 
 export default function CockpitPage() {
@@ -64,6 +71,8 @@ export default function CockpitPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
+  const router = useRouter();
+
 
   // Load campaigns from firebase on initial render
   useEffect(() => {
@@ -76,10 +85,11 @@ export default function CockpitPage() {
         const foundCampaign = fetchedCampaigns.find(c => c.id === activeId);
         setActiveCampaign(foundCampaign || null);
       } else if (fetchedCampaigns.length > 0) {
-        setActiveCampaign(fetchedCampaigns[0]);
-        if (fetchedCampaigns[0]?.id) {
-          localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
-        }
+        // Don't auto-select a campaign, let the user choose.
+        // setActiveCampaign(fetchedCampaigns[0]);
+        // if (fetchedCampaigns[0]?.id) {
+        //   localStorage.setItem('lazy-gm-active-campaign-id', fetchedCampaigns[0].id);
+        // }
       }
     };
     fetchCampaigns();
@@ -92,17 +102,15 @@ export default function CockpitPage() {
       localStorage.setItem('lazy-gm-active-campaign-id', campaignId);
       // Reset session notes when switching campaigns
       setSessionNotes("");
+      toast({title: `Campaign set to: ${campaign.name}`});
     }
   };
   
   const handleNewCampaign = async () => {
     setIsGeneratingCampaign(true);
     try {
-        const context = await generateCampaignContext({ theme: 'fantasy' });
-        let finalName = newCampaignName.trim();
-        if (!finalName) {
-            finalName = context.name;
-        }
+        const context = await generateCampaignContext({ theme: 'fantasy', campaignName: newCampaignName.trim() || undefined });
+        const finalName = newCampaignName.trim() || context.name;
         
         const newCampaign: Omit<Campaign, 'id'> = {
             name: finalName,
@@ -149,7 +157,7 @@ export default function CockpitPage() {
   const getCampaignContext = () => {
     if (!activeCampaign) return "No campaign loaded.";
     const characterInfo = activeCampaign.characters.map(c => `- ${c.name}: ${c.motivation}`).join('\n');
-    return `${activeCampaign.description}\n\n**Characters**:\n${characterInfo}`;
+    return `Campaign Name: ${activeCampaign.name}\n\n${activeCampaign.description}\n\n**Characters**:\n${characterInfo}`;
   };
   
   const handleContentGenerated = async (
@@ -158,71 +166,27 @@ export default function CockpitPage() {
     htmlContent: string,
     rawContent: any,
   ) => {
-    if (!activeCampaign) {
-       toast({
-        variant: "destructive",
-        title: 'No Active Campaign',
-        description: `Please create or load a campaign before generating content.`,
-      });
-      return;
-    }
-
-    setSessionNotes(prev => `${prev}${htmlContent}`);
+    // Session notes are now handled on the prep page.
+    // setSessionNotes(prev => `${prev}${htmlContent}`);
     
     try {
-      await addGeneratedItem(activeCampaign.id, type, rawContent);
+      // Allow saving content without an active campaign
+      const campaignId = activeCampaign ? activeCampaign.id : null;
+      await addGeneratedItem(campaignId, type, rawContent);
        toast({
-        title: 'Content Added & Saved',
-        description: `New ${title} has been added to your session notes and saved to the Lore Library.`,
+        title: 'Content Saved',
+        description: `New ${title} has been saved to the Lore Library.`,
       });
     } catch (error) {
         console.error("Failed to save generated item:", error);
         toast({
             variant: "destructive",
             title: 'Failed to Save Content',
-            description: `The content was added to session notes but could not be saved to the database.`,
+            description: `The content could not be saved to the database.`,
         });
     }
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '', 'height=800,width=1200');
-    if (printWindow) {
-      printWindow.document.write('<html><head><title>Session Notes</title>');
-      const styles = Array.from(document.styleSheets)
-        .map(s => s.href ? `<link rel="stylesheet" href="${s.href}">` : '')
-        .join('\n');
-      printWindow.document.write(styles);
-      printWindow.document.write(`<style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Open+Sans:wght@400;600&display=swap');
-        body { 
-            font-family: 'Open Sans', sans-serif;
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact; 
-        }
-        .prose h1, .prose h2, .prose h3 { font-family: 'Cinzel', serif; }
-        .prose ul > li::before { 
-          content: '⚔️'; 
-          margin-right: 0.75em; 
-          color: hsl(var(--accent));
-        }
-         .prose ul > li {
-          padding-left: 0 !important;
-          text-indent: -1.5em; 
-          margin-left: 1.5em;
-        }
-      </style>`);
-      printWindow.document.write('</head><body class="bg-background text-foreground">');
-      const contentDiv = document.createElement('div');
-      contentDiv.innerHTML = sessionNotes;
-      contentDiv.className = 'prose dark:prose-invert max-w-none p-8';
-      printWindow.document.body.appendChild(contentDiv);
-      setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-      }, 500);
-    }
-  };
 
   const saveMarkdown = (content: string, filename: string) => {
     const turndownService = new TurndownService({ headingStyle: 'atx' });
@@ -241,12 +205,17 @@ export default function CockpitPage() {
   const handleSaveFiles = () => {
     if (activeCampaign) {
        saveMarkdown(activeCampaign.description, `campaign-${activeCampaign.name.replace(/\s/g, '_')}.md`);
+       toast({
+         title: 'Campaign Saved',
+         description: 'Your campaign context has been downloaded as a markdown file.',
+       });
+    } else {
+        toast({
+            variant: "destructive",
+            title: 'No Active Campaign',
+            description: `Please load a campaign to save its context.`,
+        });
     }
-    saveMarkdown(sessionNotes, `session-notes-${new Date().toISOString().split('T')[0]}.md`);
-    toast({
-      title: 'Content Saved',
-      description: 'Your campaign and session notes have been downloaded as markdown files.',
-    });
   };
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -277,6 +246,17 @@ export default function CockpitPage() {
   };
   
   const toolkitBlocks = [
+     {
+      id: 'adventure-idea' as const,
+      title: 'Adventure Idea',
+      icon: BookMarked,
+      generate: async (userInput: string, useCampaignContext: boolean) =>
+        await generateAdventureIdea({
+          campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
+        }),
+      format: (r: any) =>
+        `<h2>Adventure: ${r.title}</h2><p><strong>Summary:</strong> ${r.summary}</p><p><strong>Conflict:</strong> ${r.conflict}</p><h3>Potential Locations:</h3><ul><li>${r.locations.join('</li><li>')}</li></ul>`,
+    },
     {
       id: 'strong-start' as const,
       title: 'Strong Start',
@@ -374,6 +354,39 @@ export default function CockpitPage() {
         { id: 'complexity', label: 'Complexity', type: 'select', values: ['Simple', 'Common', 'Challenging'], defaultValue: 'Simple' }
       ]
     },
+     {
+      id: 'bookshelf-contents' as const,
+      title: 'Bookshelf Contents',
+      icon: Book,
+      generate: async (userInput: string, useCampaignContext: boolean) =>
+        await generateBookshelfContents({
+          campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
+        }),
+      format: (r: any) => {
+        const booksHtml = r.books.map((book: any) => `
+          <div class="book-item mb-4 p-2 border-b">
+            <strong class="book-title">${book.title}</strong>
+            <p class="text-sm text-muted-foreground">${book.description}</p>
+          </div>
+        `).join('');
+        return `<h2>On the Shelf</h2>${booksHtml}`;
+      },
+      hasInteractiveChildren: true,
+    },
+    {
+      id: 'tavern-menu' as const,
+      title: "Tavern Menu",
+      icon: Utensils,
+      generate: async (userInput: string, useCampaignContext: boolean) =>
+        await generateTavernMenu({
+          campaignSetting: useCampaignContext ? `${getCampaignContext()}\n\n${userInput}` : userInput,
+        }),
+      format: (r: any) => {
+        const foodHtml = r.food.map((item: any) => `<li><strong>${item.name}</strong> (${item.price}): ${item.description}</li>`).join('');
+        const drinksHtml = r.drinks.map((item: any) => `<li><strong>${item.name}</strong> (${item.price}): ${item.description}</li>`).join('');
+        return `<h2>Menu: ${r.name}</h2><p><em>${r.description}</em></p><h3>Food</h3><ul>${foodHtml}</ul><h3>Drinks</h3><ul>${drinksHtml}</ul>`;
+      }
+    },
     {
       id: 'magic-item' as const,
       title: 'Magic Item',
@@ -424,6 +437,39 @@ export default function CockpitPage() {
         {/* Left Column: Toolkit */}
         <div className="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
           <h2 className="font-headline text-2xl">GM's Toolkit</h2>
+           <Card>
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                    <CardTitle className="text-base font-headline flex items-center gap-2">
+                      <Swords className="h-5 w-5 text-accent"/>
+                      <span>Campaign</span>
+                    </CardTitle>
+                     <div className="flex items-center gap-2">
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
+                                    {activeCampaign ? activeCampaign.name.substring(0,15) + (activeCampaign.name.length > 15 ? '...' : '') : "Load..."}
+                                    <ChevronDown className="ml-2 h-4 w-4"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {campaigns.map(c => (
+                                    <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
+                                        {c.name}
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => router.push('/campaigns')}>
+                                    Manage Campaigns
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                         </DropdownMenu>
+                         <Button size="sm" onClick={() => router.push('/campaigns')}>
+                           <PlusCircle className="h-4 w-4" />
+                         </Button>
+                     </div>
+                </CardHeader>
+            </Card>
+
           <ScrollArea className="flex-grow">
             <div className="grid grid-cols-1 gap-4 pr-4">
               {toolkitBlocks.map(block => (
@@ -437,88 +483,34 @@ export default function CockpitPage() {
                   onGenerated={handleContentGenerated}
                   options={block.options}
                   isActionable={true}
+                  useCampaignContext={!!activeCampaign}
+                  hasInteractiveChildren={block.hasInteractiveChildren}
                 />
               ))}
             </div>
           </ScrollArea>
         </div>
 
-        {/* Right Column: Session Notes & Context */}
+        {/* Right Column: Is now just a placeholder or could be used for scratchpad */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-headline flex items-center gap-2">
-                      <span>Campaign: {activeCampaign?.name || "No Active Campaign"}</span>
+           <Card className="flex-grow">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl flex items-center gap-3">
+                        <BookOpen />
+                        Welcome to the Cockpit
                     </CardTitle>
-                     <div className="flex items-center gap-2">
-                          <Input
-                            placeholder="New campaign name..."
-                            value={newCampaignName}
-                            onChange={(e) => setNewCampaignName(e.target.value)}
-                            className="w-48 h-9"
-                            disabled={isGeneratingCampaign}
-                          />
-                         <Button size="sm" onClick={handleNewCampaign} disabled={isGeneratingCampaign}>
-                           {isGeneratingCampaign ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-                         </Button>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
-                                    Load <ChevronDown className="ml-2 h-4 w-4"/>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                {campaigns.map(c => (
-                                    <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
-                                        {c.name}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                         </DropdownMenu>
-                         <Button size="sm" variant="outline" onClick={handleSaveActiveCampaign} disabled={!activeCampaign}>
-                            <Save />
-                         </Button>
-                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.md" className="hidden" />
-                         <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={!activeCampaign}>
-                            <Upload />
-                         </Button>
-                     </div>
                 </CardHeader>
-                <CardContent>
-                  <TiptapEditor
-                    content={activeCampaign?.description || ""}
-                    onChange={handleCampaignDescriptionChange}
-                    placeholder="Create or load a campaign to begin..."
-                    editable={!!activeCampaign}
-                  />
+                <CardContent className="text-muted-foreground">
+                    <p>Select a tool from the GM's Toolkit on the left to start generating content for your game.</p>
+                    <p className="mt-4">Load a campaign to provide the AI with specific context, or generate content freely without one.</p>
+                    <p className="mt-4">All generated content is automatically saved to your <a href="/library" className="underline hover:text-primary">Lore Library</a>.</p>
+                    <p className="mt-4">Use the <a href="/campaigns" className="underline hover:text-primary">Campaigns</a> page to manage your campaigns and their session notes.</p>
                 </CardContent>
-            </Card>
-
-          <div className="bg-card border rounded-lg shadow-sm h-full flex flex-col flex-grow">
-            <div className="p-4 flex items-center justify-between border-b">
-              <h2 className="font-headline text-2xl flex items-center gap-3">
-                <BookOpen /> Session Notes
-              </h2>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleSaveFiles} disabled={!activeCampaign}>
-                  <Save className="mr-2 h-4 w-4" /> Save Files
-                </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} disabled={!activeCampaign || !sessionNotes}>
-                  <Printer className="mr-2 h-4 w-4" /> Print
-                </Button>
-              </div>
-            </div>
-            <div className="flex-grow p-1">
-              <TiptapEditor
-                content={sessionNotes}
-                onChange={setSessionNotes}
-                placeholder="Your generated content will appear here. Use the GM's Toolkit on the left to get started."
-                editable={!!activeCampaign}
-              />
-            </div>
-          </div>
+           </Card>
         </div>
       </main>
     </div>
   );
 }
+
+    

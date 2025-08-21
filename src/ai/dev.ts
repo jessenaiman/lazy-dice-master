@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -14,3 +15,8 @@ import '@/ai/flows/generate-campaign-context.ts';
 import '@/ai/flows/generate-riddle.ts';
 import '@/ai/flows/generate-random-contents.ts';
 import '@/ai/flows/generate-map-image.ts';
+import '@/ai/flows/generate-adventure-idea.ts';
+import '@/ai/flows/generate-bookshelf-contents.ts';
+import '@/ai/flows/generate-tavern-menu.ts';
+
+    

@@ -28,13 +28,15 @@ export interface GeneratedItem {
   campaignId: string | null; // Can be null if not associated with a specific campaign
   createdAt: number; // Storing as timestamp for Firestore
   content: any; // This will hold the specific data for each item type
-  type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook' | 'map';
+  type: 'strong-start' | 'secret-clue' | 'npc' | 'location' | 'puzzle' | 'riddle' | 'magic-item' | 'prophecy' | 'random-contents' | 'plot-hook' | 'map' | 'adventure-idea' | 'bookshelf-contents' | 'tavern-menu';
 }
 
 export interface SessionPrep {
   id: string;
   campaignId: string;
-  date: string; // ISO string
+  createdAt: number;
+  name: string;
   notes: string; // All session notes as a single HTML string
-  generatedItemIds: string[];
 }
+
+    

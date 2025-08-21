@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {BookDashed, Library, Swords, Shield, Map as MapIcon} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -12,6 +13,14 @@ export function Header() {
       </Link>
       <nav className="flex-1">
         <ul className="flex items-center justify-end gap-2">
+          <li>
+            <Button variant="ghost" asChild>
+              <Link href="/">
+                <Swords className="mr-2 h-4 w-4" />
+                Cockpit
+              </Link>
+            </Button>
+          </li>
           <li>
             <Button variant="ghost" asChild>
               <Link href="/campaigns">
@@ -37,14 +46,6 @@ export function Header() {
             </Button>
           </li>
           <li>
-            <Button variant="ghost" asChild>
-              <Link href="/">
-                <Swords className="mr-2 h-4 w-4" />
-                Cockpit
-              </Link>
-            </Button>
-          </li>
-          <li>
             <ThemeToggle />
           </li>
         </ul>
@@ -52,3 +53,5 @@ export function Header() {
     </header>
   );
 }
+
+    
