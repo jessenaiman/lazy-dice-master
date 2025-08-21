@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2, Save, Sparkles, BookCopy, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ interface Option {
 interface GenerativeBlockProps {
   id: GeneratedItem['type'];
   title: string;
+  description?: string;
   icon: ElementType;
   generate: (userInput: string, useCampaignContext: boolean, options: any) => Promise<any>;
   format: (response: any) => string;
@@ -145,6 +146,7 @@ function InteractiveContent({ htmlContent, id }: { htmlContent: string, id: Gene
 export function GenerativeBlock({
   id,
   title,
+  description,
   icon: Icon,
   generate,
   format,
@@ -233,23 +235,17 @@ export function GenerativeBlock({
   return (
     <>
       <Card
-        className="flex flex-col justify-center cursor-pointer group hover:border-primary transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex flex-col cursor-pointer group hover:border-primary hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed h-full"
         onClick={isActionable ? handleGenerate : undefined}
         aria-disabled={!isActionable}
       >
-        <CardContent className="p-4 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-center">
-            <Icon className="h-5 w-5 text-accent transition-colors duration-200" />
-            <h3 className="font-headline text-base text-foreground transition-colors duration-200">
-              {isLoading && !isModalOpen ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                title
-              )}
-            </h3>
-             <Sparkles className="h-5 w-5 text-accent/50 group-hover:text-primary transition-colors duration-200" />
-          </div>
-        </CardContent>
+        <CardHeader className="flex-row gap-4 items-center">
+            <Icon className="h-8 w-8 text-accent shrink-0" />
+            <div>
+                <CardTitle className="font-headline text-lg">{title}</CardTitle>
+                <CardDescription className="text-sm mt-1">{description}</CardDescription>
+            </div>
+        </CardHeader>
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

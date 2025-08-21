@@ -22,7 +22,7 @@ import { generateTavernMenu } from '@/ai/flows/generate-tavern-menu';
 import {GenerativeBlock} from '@/components/generative-block';
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Card, CardContent, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,10 +67,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export default function CockpitPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
-  const [sessionNotes, setSessionNotes] = useState<string>("");
-  const [isGeneratingCampaign, setIsGeneratingCampaign] = useState(false);
-  const [newCampaignName, setNewCampaignName] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -86,8 +82,6 @@ export default function CockpitPage() {
       if (activeId) {
         const foundCampaign = fetchedCampaigns.find(c => c.id === activeId);
         setActiveCampaign(foundCampaign || null);
-      } else if (fetchedCampaigns.length > 0) {
-        // Don't auto-select a campaign, let the user choose.
       }
     };
     fetchCampaigns();
@@ -98,58 +92,9 @@ export default function CockpitPage() {
     if (campaign) {
       setActiveCampaign(campaign);
       localStorage.setItem('lazy-gm-active-campaign-id', campaignId);
-      setSessionNotes("");
       toast({title: `Campaign set to: ${campaign.name}`});
     }
   };
-  
-  const handleNewCampaign = async () => {
-    setIsGeneratingCampaign(true);
-    try {
-        const context = await generateCampaignContext({ theme: 'fantasy', campaignName: newCampaignName.trim() || undefined });
-        const finalName = newCampaignName.trim() || context.name;
-        
-        const newCampaign: Omit<Campaign, 'id'> = {
-            name: finalName,
-            description: context.description,
-            characters: context.characters.map(c => ({...c, id: crypto.randomUUID()})),
-            sessionPrepIds: [],
-            fileUrls: [],
-        };
-
-        const newId = await addCampaign(newCampaign);
-        const fullCampaign = { ...newCampaign, id: newId };
-
-        const updatedCampaigns = [...campaigns, fullCampaign];
-        setCampaigns(updatedCampaigns);
-        setActiveCampaign(fullCampaign);
-        localStorage.setItem('lazy-gm-active-campaign-id', newId);
-        setNewCampaignName("");
-        toast({ title: "Campaign Created!", description: `${fullCampaign.name} is ready.` });
-    } catch (error) {
-        console.error(error);
-        toast({ variant: "destructive", title: "Failed to generate campaign context." });
-    } finally {
-        setIsGeneratingCampaign(false);
-    }
-  };
-
-  const handleSaveActiveCampaign = async () => {
-    if (!activeCampaign) return;
-    try {
-      await updateCampaign(activeCampaign.id, activeCampaign);
-      toast({ title: "Campaign Saved!", description: `${activeCampaign.name} has been updated.`});
-    } catch (error) {
-      console.error("Failed to save campaign:", error);
-      toast({ variant: "destructive", title: "Error Saving Campaign" });
-    }
-  };
-
-  const handleCampaignDescriptionChange = (newDescription: string) => {
-    if (activeCampaign) {
-      setActiveCampaign({...activeCampaign, description: newDescription});
-    }
-  }
   
   const getCampaignContext = () => {
     if (!activeCampaign) return "No campaign loaded.";
@@ -180,68 +125,23 @@ export default function CockpitPage() {
     }
   };
 
-
-  const saveMarkdown = (content: string, filename: string) => {
-    const turndownService = new TurndownService({ headingStyle: 'atx' });
-    const markdown = turndownService.turndown(content);
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSaveFiles = () => {
-    if (activeCampaign) {
-       saveMarkdown(activeCampaign.description, `campaign-${activeCampaign.name.replace(/\s/g, '_')}.md`);
-       toast({
-         title: 'Campaign Saved',
-         description: 'Your campaign context has been downloaded as a markdown file.',
-       });
-    } else {
-        toast({
-            variant: "destructive",
-            title: 'No Active Campaign',
-            description: `Please load a campaign to save its context.`,
-        });
-    }
-  };
-
-  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !activeCampaign) return;
-
-    if (!['text/plain', 'text/markdown'].includes(file.type)) {
-       toast({variant: 'destructive', title: "Unsupported File Type", description: "Please upload a .txt or .md file."})
-       return;
-    }
-
+  const handleSaveActiveCampaign = async () => {
+    if (!activeCampaign) return;
     try {
-        const { url, path } = await uploadFile(file, `campaigns/${activeCampaign.id}/${file.name}`);
-        const newFile = { name: file.name, url, path };
-        const updatedCampaign = {
-            ...activeCampaign,
-            fileUrls: [...(activeCampaign.fileUrls || []), newFile]
-        };
-
-        await updateCampaign(activeCampaign.id, updatedCampaign);
-        setActiveCampaign(updatedCampaign);
-
-        toast({title: "File Uploaded", description: `${file.name} has been added to the campaign.`});
+      await updateCampaign(activeCampaign.id, activeCampaign);
+      toast({ title: "Campaign Saved!", description: `${activeCampaign.name} has been updated.`});
     } catch (error) {
-        console.error("File upload failed:", error);
-        toast({variant: 'destructive', title: "Upload Failed", description: "Could not upload the file."});
+      console.error("Failed to save campaign:", error);
+      toast({ variant: "destructive", title: "Error Saving Campaign" });
     }
   };
-  
+
+
   const toolkitBlocks = [
      {
       id: 'adventure-idea' as const,
       title: 'Adventure Idea',
+      description: 'Generate a complete adventure concept with a title, summary, conflict, and key locations.',
       icon: BookMarked,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateAdventureIdea({
@@ -253,6 +153,7 @@ export default function CockpitPage() {
     {
       id: 'strong-start' as const,
       title: 'Strong Start',
+      description: 'Create exciting opening scenes that immediately hook your players into the action.',
       icon: Swords,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         (
@@ -266,6 +167,7 @@ export default function CockpitPage() {
     {
       id: 'plot-hook' as const,
       title: 'Plot Hook',
+      description: 'Design compelling plot hooks with related clues to draw players into your story.',
       icon: Compass,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generatePlotHook({
@@ -280,6 +182,7 @@ export default function CockpitPage() {
     {
       id: 'secret-clue' as const,
       title: 'Secrets & Clues',
+      description: 'Generate a list of secrets and clues for your players to uncover during a session.',
       icon: KeyRound,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateSecretsAndClues({
@@ -290,6 +193,7 @@ export default function CockpitPage() {
     {
       id: 'npc' as const,
       title: 'NPC',
+      description: 'Create a unique Non-Player Character with a name, description, and distinct mannerisms.',
       icon: User,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateNpc({
@@ -303,6 +207,7 @@ export default function CockpitPage() {
     {
       id: 'location' as const,
       title: 'Location',
+      description: 'Generate a rich description of a new location, complete with discoverable secrets and clues.',
       icon: Map,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateLocation({
@@ -316,6 +221,7 @@ export default function CockpitPage() {
     {
       id: 'puzzle' as const,
       title: 'Puzzle',
+      description: 'Design a fantasy puzzle with a title, description, solution, and helpful clues.',
       icon: Puzzle,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>
         await generatePuzzle({
@@ -333,6 +239,7 @@ export default function CockpitPage() {
     {
       id: 'riddle' as const,
       title: 'Riddle',
+      description: 'Create a clever riddle with a solution and clues, scaled to your desired complexity.',
       icon: BrainCircuit,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>
         await generateRiddle({
@@ -350,6 +257,7 @@ export default function CockpitPage() {
      {
       id: 'bookshelf-contents' as const,
       title: 'Bookshelf Contents',
+      description: 'Populate a bookshelf with interesting books, then generate passages from within them.',
       icon: Book,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateBookshelfContents({
@@ -369,6 +277,7 @@ export default function CockpitPage() {
     {
       id: 'tavern-menu' as const,
       title: "Tavern Menu",
+      description: 'Quickly create a menu for a tavern or eatery, complete with food, drinks, and prices.',
       icon: Utensils,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateTavernMenu({
@@ -383,6 +292,7 @@ export default function CockpitPage() {
     {
       id: 'magic-item' as const,
       title: 'Magic Item',
+      description: 'Invent a unique magic item with a name, description, and a list of its powers.',
       icon: Gem,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateMagicItem({
@@ -396,6 +306,7 @@ export default function CockpitPage() {
     {
       id: 'prophecy' as const,
       title: 'Prophecy',
+      description: 'Craft a cryptic prophecy and come up with multiple possible interpretations.',
       icon: ScrollText,
       generate: async (userInput: string, useCampaignContext: boolean) =>
         await generateProphecy({
@@ -409,6 +320,7 @@ export default function CockpitPage() {
     {
       id: 'random-contents' as const,
       title: 'Random Contents',
+      description: 'Generate a list of random items found in a container like a pocket, chest, or backpack.',
       icon: Box,
       generate: async (userInput: string, useCampaignContext: boolean, options: any) =>
         await generateRandomContents({
@@ -426,118 +338,71 @@ export default function CockpitPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body transition-colors duration-300">
       <Header />
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-        {/* Left Column: Toolkit */}
-        <div className="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
-          <h2 className="font-headline text-2xl">GM's Toolkit</h2>
-           <Card>
-                <CardHeader className="flex flex-row items-center justify-between p-4">
-                    <CardTitle className="text-base font-headline flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-accent"/>
-                      <span>{activeCampaign ? activeCampaign.name : "No Campaign Loaded"}</span>
-                    </CardTitle>
-                     <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button size="sm" variant="outline" disabled={campaigns.length === 0}>
-                                      Load...
-                                      <ChevronDown className="ml-2 h-4 w-4"/>
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                  {campaigns.map(c => (
-                                      <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
-                                          {c.name}
-                                      </DropdownMenuItem>
-                                  ))}
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => router.push('/campaigns')}>
-                                      Manage Campaigns
-                                  </DropdownMenuItem>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                           <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" onClick={() => router.push('/campaigns')}>
-                                    <PlusCircle className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>New/Manage Campaigns</p>
-                                </TooltipContent>
-                            </Tooltip>
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" onClick={handleSaveActiveCampaign} disabled={!activeCampaign}>
-                                    <Save className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Save Campaign Changes</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                     </div>
-                </CardHeader>
-            </Card>
-
-          <ScrollArea className="flex-grow">
-            <div className="grid grid-cols-1 gap-4 pr-4">
-              {toolkitBlocks.map(block => (
-                <GenerativeBlock
-                  key={block.id}
-                  id={block.id}
-                  title={block.title}
-                  icon={block.icon}
-                  generate={block.generate}
-                  format={block.format}
-                  onGenerated={handleContentGenerated}
-                  options={block.options}
-                  isActionable={true}
-                  useCampaignContext={!!activeCampaign}
-                  hasInteractiveChildren={block.hasInteractiveChildren}
-                />
-              ))}
-            </div>
-          </ScrollArea>
+      <main className="flex-1 p-4 md:p-8">
+         <div className="flex items-center justify-between mb-6">
+          <h1 className="font-headline text-3xl font-bold tracking-tight">GM's Toolkit</h1>
+           <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-48 justify-between">
+                      <span>{activeCampaign ? activeCampaign.name : "No Campaign"}</span>
+                      <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48">
+                      {campaigns.map(c => (
+                          <DropdownMenuItem key={c.id} onClick={() => handleSetActiveCampaign(c.id)}>
+                              {c.name}
+                          </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuContent>
+              </DropdownMenu>
+              <TooltipProvider>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="icon" variant="ghost" onClick={() => router.push('/campaigns')}>
+                          <Shield />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manage Campaigns</p>
+                      </TooltipContent>
+                  </Tooltip>
+                   <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="icon" variant="ghost" onClick={handleSaveActiveCampaign} disabled={!activeCampaign}>
+                          <Save />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Save Campaign Changes</p>
+                      </TooltipContent>
+                  </Tooltip>
+              </TooltipProvider>
+           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-           {activeCampaign ? (
-               <Card className="flex-grow flex flex-col">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-2xl flex items-center gap-3">
-                            <BookOpen />
-                            {activeCampaign.name}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                       <TiptapEditor
-                            content={activeCampaign.description}
-                            onChange={handleCampaignDescriptionChange}
-                            placeholder="Describe your campaign..."
-                        />
-                    </CardContent>
-               </Card>
-           ) : (
-             <Card className="flex-grow">
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl flex items-center gap-3">
-                        <BookOpen />
-                        Welcome to the Cockpit
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="text-muted-foreground h-full flex flex-col items-center justify-center text-center">
-                    <p className="mb-4">Select a campaign from the dropdown above or create a new one to get started.</p>
-                    <p>Using a campaign provides the AI with context for better, more tailored content generation.</p>
-                    <Button className="mt-6" onClick={() => router.push('/campaigns')}>Manage Campaigns</Button>
-                </CardContent>
-           </Card>
-           )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {toolkitBlocks.map(block => (
+            <GenerativeBlock
+              key={block.id}
+              id={block.id}
+              title={block.title}
+              description={block.description}
+              icon={block.icon}
+              generate={block.generate}
+              format={block.format}
+              onGenerated={handleContentGenerated}
+              options={block.options}
+              isActionable={true}
+              useCampaignContext={!!activeCampaign}
+              hasInteractiveChildren={block.hasInteractiveChildren}
+            />
+          ))}
         </div>
       </main>
     </div>
   );
 }
+
+    
