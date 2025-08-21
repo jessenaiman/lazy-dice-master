@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Download } from 'lucide-react';
+import { Loader2, Sparkles, Download, MapIcon } from 'lucide-react';
 import { generateMapImage } from '@/ai/flows/generate-map-image';
 
 type MapType = 'World' | 'City' | 'Treasure' | 'Battle';
