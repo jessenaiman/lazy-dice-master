@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum GeneratedItemType {
+  strong_start
+  secret_clue
+  npc
+  location
+  puzzle
+  riddle
+  magic_item
+  prophecy
+  random_contents
+  plot_hook
+  map
+  adventure_idea
+  bookshelf_contents
+  tavern_menu
+}
+
+model GeneratedItem {
+  id         String            @id @default(cuid())
+  campaignId String? 
+  createdAt  Int
+  content    Json
+  type       GeneratedItemType
+}

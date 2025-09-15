@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Header } from "@/components/header";
-import { getAllGeneratedItems, getCampaigns } from "@/lib/firebase-service";
+import { getAllGeneratedItems, getCampaigns } from "@/lib/generated-content-service";
 import type { Campaign, GeneratedItem } from '@/lib/types';
 import {
   Table,

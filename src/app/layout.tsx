@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Footer } from "@/components/footer";
 
-
 export const metadata: Metadata = {
   title: "Lazy GM Toolkit",
   description: "The Ultimate Lazy GM Toolkit – Prep in Under 30 Minutes",
