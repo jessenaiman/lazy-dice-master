@@ -1,0 +1,16 @@
+[
+  {
+    "id": "campaign1",
+    "title": "Test Campaign 1",
+    "description": "A sample campaign for testing",
+    "characters": ["char1", "char2"],
+    "status": "active"
+  },
+  {
+    "id": "campaign2",
+    "title": "Edge Case Campaign",
+    "description": "Campaign with invalid data",
+    "characters": [],
+    "status": "draft"
+  }
+]

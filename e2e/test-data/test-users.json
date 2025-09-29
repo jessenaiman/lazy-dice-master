@@ -1,0 +1,20 @@
+[
+  {
+    "id": "user1",
+    "name": "Test User 1",
+    "email": "user1@example.com",
+    "role": "player"
+  },
+  {
+    "id": "user2",
+    "name": "Test User 2",
+    "email": "user2@example.com",
+    "role": "gm"
+  },
+  {
+    "id": "user3",
+    "name": "Edge Case User",
+    "email": "invalid@edge.case",
+    "role": "player"
+  }
+]

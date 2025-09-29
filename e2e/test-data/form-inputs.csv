@@ -1,0 +1,6 @@
+name,email,age,notes
+Valid Input,user@valid.com,25,Normal user
+Edge Case Long Name,longname@edge.com,150,Age over max
+Invalid Email,invalid-email,30,Bad email format
+Empty Fields,,, ,All fields empty
+Special Chars,user@special.co.uk,99,Notes with quotes and symbols
