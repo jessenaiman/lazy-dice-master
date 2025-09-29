@@ -1,0 +1,69 @@
+{
+  "projectName": "Lazy Dice Master",
+  "description": "An AI-powered toolkit for lazy Game Masters (GMs) in tabletop RPGs like D&D 5e, providing generative tools for campaign prep, NPCs, locations, puzzles, and more, based on the Lazy GM's Resource Document.",
+  "techStack": {
+    "framework": "Next.js 15.4.7 (App Router)",
+    "language": "TypeScript",
+    "runtime": "Node.js",
+    "styling": "Tailwind CSS 4.1.13 with shadcn/ui and Radix UI primitives",
+    "uiComponents": "shadcn/ui, Radix UI, Lucide React icons, Tiptap (rich text editor)",
+    "aiIntegration": "Genkit 1.14.1 with Google AI (Gemini models via @genkit-ai/googleai)",
+    "database": "Firebase (Firestore for campaigns, auth, storage)",
+    "buildTools": "Turbopack (dev server on port 9002), tsx for AI flows",
+    "otherLibraries": {
+      "stateManagement": "React Hook Form, Zod validation",
+      "animations": "Tailwind CSS Animate, Animate.css",
+      "charts": "Recharts",
+      "markdown": "Marked, Turndown",
+      "carousel": "Embla Carousel React",
+      "dateHandling": "date-fns",
+      "sanitization": "DOMPurify",
+      "themes": "next-themes"
+    }
+  },
+  "keyFeatures": [
+    "Generative AI blocks for RPG elements (e.g., adventure ideas, NPCs, puzzles, plot hooks, magic items)",
+    "Campaign management with Firebase (create, edit, set active campaigns)",
+    "Rich text editing with Tiptap",
+    "Local storage for active campaign persistence",
+    "Toast notifications and theme support (system/light/dark)",
+    "Responsive UI with mobile-first design"
+  ],
+  "integrations": [
+    "Google Generative AI (via Genkit flows in src/ai/flows/)",
+    "Firebase for data persistence",
+    "Custom AI flows registered in src/ai/dev.ts"
+  ],
+  "buildConfiguration": {
+    "devServer": "next dev --turbopack -p 9002",
+    "aiDev": "genkit start -- tsx src/ai/dev.ts",
+    "linting": "next lint",
+    "typeCheck": "tsc --noEmit",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "core": "Next.js, React 18.3.1, TypeScript 5",
+    "ui": "@radix-ui/react-* (accordion, dialog, etc.), class-variance-authority, clsx, tailwind-merge",
+    "ai": "genkit, @genkit-ai/googleai, @genkit-ai/next",
+    "forms": "react-hook-form, @hookform/resolvers, zod",
+    "editor": "@tiptap/react, @tiptap/starter-kit, @tiptap/extension-placeholder, @tiptap/pm",
+    "firebase": "firebase 11.9.1",
+    "other": "recharts, embla-carousel-react, date-fns, dompurify, marked, turndown"
+  },
+  "devDependencies": {
+    "types": "@types/node, @types/react, @types/react-dom, @types/marked, @types/turndown",
+    "build": "postcss 8, tailwindcss 4.1.13, genkit-cli 1.14.1",
+    "typescript": "typescript 5"
+  },
+  "environment": {
+    "requires": "GOOGLE_GENAI_API_KEY for AI features, Firebase config (NEXT_PUBLIC_FIREBASE_* env vars)"
+  },
+  "codeStructure": {
+    "app": "Next.js App Router pages (/, /campaigns, /prep/[id], /library, /maps)",
+    "components": "UI components (header, footer, generative-block, tiptap-editor, theme-provider)",
+    "lib": "Types, Firebase service utils",
+    "ai": "flows/ for Genkit AI generators, dev.ts for registration"
+  },
+  "docs": "docs/lazy_gm/ contains Lazy GM Resource Document (Markdown, HTML, JSON formats for RPG prep resources)"
+}
