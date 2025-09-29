@@ -1,9 +1,9 @@
-
-// src/lib/firebase-service.ts
+// src/lib/generated-content-service.ts
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Campaign, GeneratedItem, StoredFile, SessionPrep, UserSettings } from './types';
+import { addGeneratedItemPrisma, getGeneratedItemsForCampaignPrisma, getAllGeneratedItemsPrisma, getGeneratedItemsByTypePrisma } from './prisma-service';
 
 // Campaign functions
 export const getCampaigns = async (): Promise<Campaign[]> => {
@@ -53,49 +53,23 @@ export const uploadFile = async (file: File, path: string): Promise<StoredFile> 
 }
 
 // GeneratedItem functions
+
 export const addGeneratedItem = async (campaignId: string | null, type: GeneratedItem['type'], content: any): Promise<string> => {
-    const itemsCol = collection(db, 'generatedItems');
-    const docRef = await addDoc(itemsCol, {
-        campaignId,
-        type,
-        content,
-        createdAt: Date.now(),
-    });
-    return docRef.id;
+    return await addGeneratedItemPrisma(campaignId, type, content);
 };
 
 
 export const getGeneratedItemsForCampaign = async (campaignId: string): Promise<GeneratedItem[]> => {
-    const itemsCol = collection(db, 'generatedItems');
-    const q = query(itemsCol, where('campaignId', '==', campaignId), orderBy('createdAt', 'desc'));
-    const itemSnapshot = await getDocs(q);
-    const itemList = itemSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return { 
-            id: doc.id, 
-            ...data,
-        } as GeneratedItem
-    });
-    return itemList;
+    return await getGeneratedItemsForCampaignPrisma(campaignId);
 };
 
 export const getAllGeneratedItems = async (): Promise<GeneratedItem[]> => {
-    const itemsCol = collection(db, 'generatedItems');
-    const q = query(itemsCol, orderBy('createdAt', 'desc'));
-    const itemSnapshot = await getDocs(q);
-    return itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GeneratedItem));
+    return await getAllGeneratedItemsPrisma();
 }
 
 
 export const getGeneratedItemsByType = async (type: GeneratedItem['type']): Promise<GeneratedItem[]> => {
-    const itemsCol = collection(db, 'generatedItems');
-    const q = query(itemsCol, where('type', '==', type), orderBy('createdAt', 'desc'));
-    const itemSnapshot = await getDocs(q);
-    const itemList = itemSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as GeneratedItem));
-    return itemList;
+    return await getGeneratedItemsByTypePrisma(type);
 };
 
 // SessionPrep functions

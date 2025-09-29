@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { getCampaigns, deleteCampaign as deleteCampaignFromDb, addCampaign, getSessionPrepsForCampaign, addSessionPrep, deleteSessionPrep } from "@/lib/firebase-service";
+import { getCampaigns, deleteCampaign as deleteCampaignFromDb, addCampaign, getSessionPrepsForCampaign, addSessionPrep, deleteSessionPrep } from "@/lib/generated-content-service";
 import { generateCampaignContext } from "@/ai/flows/generate-campaign-context";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Footer } from "@/components/footer";

@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSessionPrep, updateSessionPrep, getCampaign } from '@/lib/firebase-service';
+import { getSessionPrep, updateSessionPrep, getCampaign } from '@/lib/generated-content-service';
 import type { SessionPrep, Campaign } from '@/lib/types';
 import { Header } from '@/components/header';
 import { TiptapEditor } from '@/components/tiptap-editor';

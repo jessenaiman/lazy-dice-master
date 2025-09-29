@@ -33,7 +33,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Download, Map as MapIcon, Save, Image as ImageIcon } from 'lucide-react';
 import { generateMapImage } from '@/ai/flows/generate-map-image';
-import { addGeneratedItem, getGeneratedItemsByType } from '@/lib/firebase-service';
+import { addGeneratedItem, getGeneratedItemsByType } from '@/lib/generated-content-service';
 import type { GeneratedItem } from '@/lib/types';
 import { Footer } from '@/components/footer';
 
