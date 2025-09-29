@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { Campaign, SessionPrep } from "@/lib/types";
+import type { Campaign, SessionPrep, UserSettings } from "@/lib/types";
 import { Header } from "@/components/header";
 import Image from "next/image";
 import {

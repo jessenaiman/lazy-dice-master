@@ -37,4 +37,9 @@ export interface SessionPrep {
   createdAt: number;
   name: string;
   notes: string; // All session notes as a single HTML string
+export interface UserSettings {
+  id: string; // User ID
+  activeCampaignId?: string; // ID of the currently active campaign
+  // Can be extended with other user preferences in the future
+}
 }

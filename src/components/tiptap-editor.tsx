@@ -116,7 +116,7 @@ export function TiptapEditor({ content, onChange, placeholder, isLoading, editab
   return (
     <div className="relative flex flex-col h-full">
       {editable && <EditorToolbar editor={editor} />}
-      <ScrollArea className="flex-grow rounded-b-md border border-input border-t-0">
+      <ScrollArea className="grow rounded-b-md border border-input border-t-0">
          <EditorContent editor={editor} className="p-4 h-full"/>
       </ScrollArea>
     </div>

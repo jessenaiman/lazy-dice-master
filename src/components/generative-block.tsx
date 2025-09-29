@@ -1,7 +1,7 @@
-
 // src/components/generative-block.tsx
 "use client";
 
+import DOMPurify from 'dompurify';
 import { useState, type ElementType, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -69,7 +69,7 @@ function InteractiveContent({ htmlContent, id }: { htmlContent: string, id: Gene
                     const result = await generateBookPassage({ bookTitle });
                     const passageP = document.createElement('p');
                     passageP.className = 'text-sm mt-2 italic border-l-2 pl-2';
-                    passageP.innerHTML = result.passage;
+                    passageP.innerHTML = DOMPurify.sanitize(result.passage);
 
                     const parentDiv = button.closest('.book-item');
                     // Remove old passage if it exists
@@ -135,11 +135,11 @@ function InteractiveContent({ htmlContent, id }: { htmlContent: string, id: Gene
                 return `${p1}${p2}${p3}<button class="generate-passage-btn text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded-md mt-2 flex items-center gap-1" data-book-title="${p2}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Read Passage</button>`;
             }
         );
-        return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: finalHtml }} />;
+        return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalHtml) }} />;
     }
 
 
-    return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }} />;
 }
 
 
@@ -347,4 +347,3 @@ export function GenerativeBlock({
   );
 }
 
-    

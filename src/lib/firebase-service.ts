@@ -3,7 +3,7 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { Campaign, GeneratedItem, StoredFile, SessionPrep } from './types';
+import type { Campaign, GeneratedItem, StoredFile, SessionPrep, UserSettings } from './types';
 
 // Campaign functions
 export const getCampaigns = async (): Promise<Campaign[]> => {
@@ -125,4 +125,27 @@ export const updateSessionPrep = async (id: string, prepData: Partial<SessionPre
 
 export const deleteSessionPrep = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'sessionPreps', id));
+};
+// UserSettings functions
+export const getUserSettings = async (userId: string): Promise<UserSettings | null> => {
+  const userSettingsDoc = doc(db, 'userSettings', userId);
+  const userSettingsSnap = await getDoc(userSettingsDoc);
+  if (userSettingsSnap.exists()) {
+    return { id: userSettingsSnap.id, ...userSettingsSnap.data() } as UserSettings;
+  }
+  return null;
+};
+
+export const createUserSettings = async (userId: string, settings: Omit<UserSettings, 'id'>): Promise<string> => {
+  const userSettingsCol = collection(db, 'userSettings');
+  const docRef = await addDoc(userSettingsCol, {
+    ...settings,
+    id: userId, // Ensure the id is set to userId
+  });
+  return docRef.id;
+};
+
+export const updateUserSettings = async (userId: string, settings: Partial<UserSettings>): Promise<void> => {
+  const userSettingsDoc = doc(db, 'userSettings', userId);
+  await updateDoc(userSettingsDoc, settings);
 };
